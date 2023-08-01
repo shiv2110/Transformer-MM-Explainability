@@ -54,7 +54,7 @@ def handle_residual(orig_self_attention):
     return self_attention
 
 class GeneratorOurs:
-    def __init__(self, model_usage, save_visualization=False, image_R=None):
+    def __init__(self, model_usage, save_visualization=False, **kwargs):
         self.model_usage = model_usage
         self.save_visualization = save_visualization
         self.image_R = []
