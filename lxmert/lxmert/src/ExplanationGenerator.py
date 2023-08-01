@@ -54,10 +54,14 @@ def handle_residual(orig_self_attention):
     return self_attention
 
 class GeneratorOurs:
-    def __init__(self, model_usage, save_visualization=False, **kwargs):
+    def __init__(self, model_usage, save_visualization=False):
         self.model_usage = model_usage
         self.save_visualization = save_visualization
         self.image_R = []
+        self.text_R = []
+        self.text_image_R = []
+        self.image_text_R = []
+
 
     def handle_self_attention_lang(self, blocks):
         for blk in blocks:
@@ -70,6 +74,9 @@ class GeneratorOurs:
             R_t_t_add, R_t_i_add = apply_self_attention_rules(self.R_t_t, self.R_t_i, cam)
             self.R_t_t += R_t_t_add
             self.R_t_i += R_t_i_add
+            self.text_image_R.append(self.R_t_i)
+            self.text_R.append(self.R_t_t)
+
 
     def handle_self_attention_image(self, blocks):
         for blk in blocks:
@@ -82,7 +89,8 @@ class GeneratorOurs:
             R_i_i_add, R_i_t_add = apply_self_attention_rules(self.R_i_i, self.R_i_t, cam)
             self.R_i_i += R_i_i_add
             self.R_i_t += R_i_t_add
-            self.image_R.append(self.R_i_t)
+            self.image_text_R.append(self.R_i_t)
+            self.image_R.append(self.R_i_i)
 
 
 
@@ -96,6 +104,9 @@ class GeneratorOurs:
         R_t_t_add, R_t_i_add = apply_self_attention_rules(self.R_t_t, self.R_t_i, cam)
         self.R_t_t += R_t_t_add
         self.R_t_i += R_t_i_add
+        self.text_R.append(self.R_t_t)
+        self.text_image_R.append(self.R_t_i)
+
 
     def handle_co_attn_self_image(self, block):
         grad = block.visn_self_att.self.get_attn_gradients().detach()
@@ -107,6 +118,10 @@ class GeneratorOurs:
         R_i_i_add, R_i_t_add = apply_self_attention_rules(self.R_i_i, self.R_i_t, cam)
         self.R_i_i += R_i_i_add
         self.R_i_t += R_i_t_add
+        self.image_R.append(self.R_i_i)
+        self.image_text_R.append(self.R_i_t)
+        
+
 
     def handle_co_attn_lang(self, block):
         if self.use_lrp:
@@ -193,6 +208,12 @@ class GeneratorOurs:
             self.R_i_t += R_i_t_addition
             self.R_i_i += R_i_i_addition
 
+            self.text_image_R.append(self.R_t_i)
+            self.text_R.append(self.R_t_t)
+            self.image_text_R.append(self.R_i_t)
+            self.image_R.append(self.R_i_i)
+
+
             # language self attention
             self.handle_co_attn_self_lang(blk)
 
@@ -207,11 +228,16 @@ class GeneratorOurs:
         self.R_t_i += R_t_i_addition
         self.R_t_t += R_t_t_addition
 
+        self.text_image_R.append(self.R_t_i)
+        self.text_R.append(self.R_t_t)
+
+
         # language self attention
         self.handle_co_attn_self_lang(blk)
 
         # disregard the [CLS] token itself
-        self.R_t_t[0,0] = 0
+        self.R_t_t[0, 0] = 0
+        self.text_R[-1][0, 0] = 0
         return self.R_t_t, self.R_t_i
 
 
