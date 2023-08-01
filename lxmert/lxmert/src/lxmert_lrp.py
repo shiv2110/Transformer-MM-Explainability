@@ -51,7 +51,6 @@ ACT2FN = {
     "gelu": GELU,
 }
 
-
 @dataclass
 class LxmertModelOutput(ModelOutput):
     """
