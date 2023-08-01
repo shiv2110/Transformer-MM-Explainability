@@ -208,10 +208,10 @@ class GeneratorOurs:
             self.R_i_t += R_i_t_addition
             self.R_i_i += R_i_i_addition
 
-            self.text_image_R.append(self.R_t_i)
-            self.text_R.append(self.R_t_t)
-            self.image_text_R.append(self.R_i_t)
-            self.image_R.append(self.R_i_i)
+            # self.text_image_R.append(self.R_t_i)
+            # self.text_R.append(self.R_t_t)
+            # self.image_text_R.append(self.R_i_t)
+            # self.image_R.append(self.R_i_i)
 
 
             # language self attention
