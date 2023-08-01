@@ -74,8 +74,8 @@ class GeneratorOurs:
             R_t_t_add, R_t_i_add = apply_self_attention_rules(self.R_t_t, self.R_t_i, cam)
             self.R_t_t += R_t_t_add
             self.R_t_i += R_t_i_add
-            self.text_image_R.append(self.R_t_i)
-            self.text_R.append(self.R_t_t)
+            self.text_image_R.append(self.R_t_i.detach().clone())
+            self.text_R.append(self.R_t_t.detach().clone())
 
 
     def handle_self_attention_image(self, blocks):
@@ -89,8 +89,8 @@ class GeneratorOurs:
             R_i_i_add, R_i_t_add = apply_self_attention_rules(self.R_i_i, self.R_i_t, cam)
             self.R_i_i += R_i_i_add
             self.R_i_t += R_i_t_add
-            self.image_text_R.append(self.R_i_t)
-            self.image_R.append(self.R_i_i)
+            self.image_text_R.append(self.R_i_t.detach().clone())
+            self.image_R.append(self.R_i_i.detach().clone())
 
 
 
@@ -104,9 +104,9 @@ class GeneratorOurs:
         R_t_t_add, R_t_i_add = apply_self_attention_rules(self.R_t_t, self.R_t_i, cam)
         self.R_t_t += R_t_t_add
         self.R_t_i += R_t_i_add
-        print(self.R_t_t)
-        self.text_R.append(self.R_t_t)
-        self.text_image_R.append(self.R_t_i)
+        # print(self.R_t_t)
+        self.text_R.append(self.R_t_t.detach().clone())
+        self.text_image_R.append(self.R_t_i.detach().clone())
 
 
     def handle_co_attn_self_image(self, block):
@@ -119,8 +119,8 @@ class GeneratorOurs:
         R_i_i_add, R_i_t_add = apply_self_attention_rules(self.R_i_i, self.R_i_t, cam)
         self.R_i_i += R_i_i_add
         self.R_i_t += R_i_t_add
-        self.image_R.append(self.R_i_i)
-        self.image_text_R.append(self.R_i_t)
+        self.image_R.append(self.R_i_i.detach().clone())
+        self.image_text_R.append(self.R_i_t.detach().clone())
         
 
 
@@ -229,8 +229,8 @@ class GeneratorOurs:
         self.R_t_i += R_t_i_addition
         self.R_t_t += R_t_t_addition
 
-        self.text_image_R.append(self.R_t_i)
-        self.text_R.append(self.R_t_t)
+        self.text_image_R.append(self.R_t_i.detach().clone())
+        self.text_R.append(self.R_t_t.detach().clone())
 
 
         # language self attention
