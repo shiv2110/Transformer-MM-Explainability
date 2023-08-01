@@ -104,6 +104,7 @@ class GeneratorOurs:
         R_t_t_add, R_t_i_add = apply_self_attention_rules(self.R_t_t, self.R_t_i, cam)
         self.R_t_t += R_t_t_add
         self.R_t_i += R_t_i_add
+        print(R_t_t_add)
         self.text_R.append(self.R_t_t)
         self.text_image_R.append(self.R_t_i)
 
