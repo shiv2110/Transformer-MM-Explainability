@@ -54,7 +54,7 @@ def handle_residual(orig_self_attention):
     return self_attention
 
 class GeneratorOurs:
-    def __init__(self, model_usage, save_visualization=False):
+    def __init__(self, model_usage, save_visualization=False, image_R=None):
         self.model_usage = model_usage
         self.save_visualization = save_visualization
         self.image_R = []
@@ -83,6 +83,8 @@ class GeneratorOurs:
             self.R_i_i += R_i_i_add
             self.R_i_t += R_i_t_add
             self.image_R.append(self.R_i_t)
+
+
 
     def handle_co_attn_self_lang(self, block):
         grad = block.lang_self_att.self.get_attn_gradients().detach()
