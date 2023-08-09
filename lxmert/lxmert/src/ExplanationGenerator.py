@@ -14,6 +14,7 @@ def compute_rollout_attention(all_layer_matrices, start_layer=0):
         joint_attention = matrices_aug[i].matmul(joint_attention)
     return joint_attention
 
+
 # rule 5 from paper
 def avg_heads(cam, grad):
     cam = cam.reshape(-1, cam.shape[-2], cam.shape[-1])
@@ -61,6 +62,12 @@ class GeneratorOurs:
         self.text_R = []
         self.text_image_R = []
         self.image_text_R = []
+        self.self_attn_lang_grads = []
+        self.self_attn_image_grads = []
+        self.co_self_attn_lang_grads = []
+        self.co_self_attn_image_grads = []
+
+
 
 
     def handle_self_attention_lang(self, blocks):
@@ -76,6 +83,7 @@ class GeneratorOurs:
             self.R_t_i += R_t_i_add
             self.text_image_R.append(self.R_t_i.detach().clone())
             self.text_R.append(self.R_t_t.detach().clone())
+            self.self_attn_lang_grads.append(grad)
 
 
     def handle_self_attention_image(self, blocks):
@@ -91,6 +99,8 @@ class GeneratorOurs:
             self.R_i_t += R_i_t_add
             self.image_text_R.append(self.R_i_t.detach().clone())
             self.image_R.append(self.R_i_i.detach().clone())
+            self.self_attn_image_grads.append(grad)
+
 
 
 
@@ -107,6 +117,8 @@ class GeneratorOurs:
         # print(self.R_t_t)
         self.text_R.append(self.R_t_t.detach().clone())
         self.text_image_R.append(self.R_t_i.detach().clone())
+        self.co_self_attn_lang_grads.append(grad)
+
 
 
     def handle_co_attn_self_image(self, block):
@@ -121,6 +133,8 @@ class GeneratorOurs:
         self.R_i_t += R_i_t_add
         self.image_R.append(self.R_i_i.detach().clone())
         self.image_text_R.append(self.R_i_t.detach().clone())
+        self.self_attn_image_grads.append(grad)
+    
         
 
 
