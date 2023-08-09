@@ -133,7 +133,6 @@ class GeneratorOurs:
         self.R_i_t += R_i_t_add
         self.image_R.append(self.R_i_i.detach().clone())
         self.image_text_R.append(self.R_i_t.detach().clone())
-        self.self_attn_image_grads.append(grad)
         self.co_self_attn_image_grads.append(grad)
 
     
