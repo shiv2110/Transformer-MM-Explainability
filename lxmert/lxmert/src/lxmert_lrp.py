@@ -351,6 +351,8 @@ class LxmertAttention(nn.Module):
         self.attn = None
         self.attn_gradients = None
         self.attn_cam = None
+        
+        print(config.num_attention_heads)
 
     def get_attn(self):
         return self.attn
@@ -359,6 +361,7 @@ class LxmertAttention(nn.Module):
         self.attn = attn
 
     def get_attn_cam(self):
+        # print(config.num_attention_heads)
         return self.attn_cam
 
     def save_attn_cam(self, attn_cam):
