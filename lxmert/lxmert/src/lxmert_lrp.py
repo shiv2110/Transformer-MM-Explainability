@@ -36,6 +36,9 @@ from transformers.modeling_utils import PreTrainedModel
 from transformers.utils import logging
 from transformers.models.lxmert.configuration_lxmert import LxmertConfig
 
+#link for configuration parameters
+# https://huggingface.co/transformers/v4.6.0/_modules/transformers/models/lxmert/configuration_lxmert.html
+
 logger = logging.get_logger(__name__)
 
 _CONFIG_FOR_DOC = "LxmertConfig"
@@ -352,7 +355,6 @@ class LxmertAttention(nn.Module):
         self.attn_gradients = None
         self.attn_cam = None
         
-        print(config.num_attention_heads)
 
     def get_attn(self):
         return self.attn
