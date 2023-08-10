@@ -209,7 +209,7 @@ class GeneratorOurs:
             model.relprop(torch.tensor(one_hot_vector).to(output.device), **kwargs)
 
         # language self attention
-        blocks = model.lxmert.encoder.l_layer
+        blocks = model.lxmert.encoder.layer
         self.handle_self_attention_lang(blocks)
 
         # image self attention
