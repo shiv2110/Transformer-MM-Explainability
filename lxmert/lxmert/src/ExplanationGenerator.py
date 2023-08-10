@@ -54,6 +54,8 @@ def handle_residual(orig_self_attention):
     self_attention += torch.eye(self_attention.shape[-1]).to(self_attention.device)
     return self_attention
 
+
+
 class GeneratorOurs:
     def __init__(self, model_usage, save_visualization=False):
         self.model_usage = model_usage
@@ -67,6 +69,10 @@ class GeneratorOurs:
         self.co_self_attn_lang_grads = []
         self.co_self_attn_image_grads = []
 
+        self.self_attn_lang_agg = []
+        self.self_attn_image_agg = []
+        self.co_attn_lang_agg = []
+        self.co_attn_image_agg = []
 
 
 
@@ -84,6 +90,7 @@ class GeneratorOurs:
             self.text_image_R.append(self.R_t_i.detach().clone())
             self.text_R.append(self.R_t_t.detach().clone())
             self.self_attn_lang_grads.append(grad)
+            self.self_attn_lang_agg.append(cam)
 
 
     def handle_self_attention_image(self, blocks):
@@ -100,7 +107,7 @@ class GeneratorOurs:
             self.image_text_R.append(self.R_i_t.detach().clone())
             self.image_R.append(self.R_i_i.detach().clone())
             self.self_attn_image_grads.append(grad)
-
+            self.self_attn_image_agg.append(cam)
 
 
 
@@ -118,6 +125,8 @@ class GeneratorOurs:
         self.text_R.append(self.R_t_t.detach().clone())
         self.text_image_R.append(self.R_t_i.detach().clone())
         self.co_self_attn_lang_grads.append(grad)
+        self.co_attn_lang_agg.append(cam)
+
 
 
 
@@ -134,10 +143,10 @@ class GeneratorOurs:
         self.image_R.append(self.R_i_i.detach().clone())
         self.image_text_R.append(self.R_i_t.detach().clone())
         self.co_self_attn_image_grads.append(grad)
+        self.co_attn_image_agg.append(cam)
+    
 
     
-        
-
 
     def handle_co_attn_lang(self, block):
         if self.use_lrp:
@@ -200,7 +209,7 @@ class GeneratorOurs:
             model.relprop(torch.tensor(one_hot_vector).to(output.device), **kwargs)
 
         # language self attention
-        blocks = model.lxmert.encoder.layer
+        blocks = model.lxmert.encoder.l_layer
         self.handle_self_attention_lang(blocks)
 
         # image self attention
