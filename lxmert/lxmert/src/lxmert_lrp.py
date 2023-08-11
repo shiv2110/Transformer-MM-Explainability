@@ -363,7 +363,7 @@ class LxmertAttention(nn.Module):
         self.attn = attn
 
     def get_attn_cam(self):
-        print(self.num_attention_heads)
+        # print(self.num_attention_heads)
         return self.attn_cam
 
     def save_attn_cam(self, attn_cam):

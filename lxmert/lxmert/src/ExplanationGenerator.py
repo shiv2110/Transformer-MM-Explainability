@@ -74,6 +74,11 @@ class GeneratorOurs:
         self.co_attn_lang_agg = []
         self.co_attn_image_agg = []
 
+        self.attn_t_i = []
+        self.attn_i_t = []
+        self.attn_grads_t_i = []
+        self.attn_grads_t_i = []
+
 
 
     def handle_self_attention_lang(self, blocks):
@@ -158,6 +163,8 @@ class GeneratorOurs:
         R_t_i_addition, R_t_t_addition = apply_mm_attention_rules(self.R_t_t, self.R_i_i, self.R_i_t, cam_t_i,
                                                                   apply_normalization=self.normalize_self_attention,
                                                                   apply_self_in_rule_10=self.apply_self_in_rule_10)
+        self.attn_t_i.append(cam_t_i)
+        self.attn_grads_t_i.append(grad_t_i)
         return R_t_i_addition, R_t_t_addition
 
     def handle_co_attn_image(self, block):
@@ -170,6 +177,8 @@ class GeneratorOurs:
         R_i_t_addition, R_i_i_addition = apply_mm_attention_rules(self.R_i_i, self.R_t_t, self.R_t_i, cam_i_t,
                                                                   apply_normalization=self.normalize_self_attention,
                                                                   apply_self_in_rule_10=self.apply_self_in_rule_10)
+        self.attn_i_t.append(cam_i_t)
+        self.attn_grads_i_t.append(grad_i_t)
         return R_i_t_addition, R_i_i_addition
 
     def generate_ours(self, input, index=None, use_lrp=True, normalize_self_attention=True, apply_self_in_rule_10=True, method_name="ours"):
