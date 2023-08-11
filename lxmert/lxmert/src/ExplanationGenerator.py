@@ -77,7 +77,7 @@ class GeneratorOurs:
         self.attn_t_i = []
         self.attn_i_t = []
         self.attn_grads_t_i = []
-        self.attn_grads_t_i = []
+        self.attn_grads_i_t = []
 
 
 
