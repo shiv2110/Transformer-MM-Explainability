@@ -79,6 +79,8 @@ class GeneratorOurs:
         self.attn_grads_t_i = []
         self.attn_grads_i_t = []
 
+        self.all_attn_t_i = []
+
 
 
     def handle_self_attention_lang(self, blocks):
@@ -158,6 +160,8 @@ class GeneratorOurs:
             cam_t_i = block.visual_attention.att.get_attn_cam().detach()
         else:
             cam_t_i = block.visual_attention.att.get_attn().detach()
+        
+        self.all_attn_t_i.append(cam_t_i)
         grad_t_i = block.visual_attention.att.get_attn_gradients().detach()
         cam_t_i = avg_heads(cam_t_i, grad_t_i)
         R_t_i_addition, R_t_t_addition = apply_mm_attention_rules(self.R_t_t, self.R_i_i, self.R_i_t, cam_t_i,
