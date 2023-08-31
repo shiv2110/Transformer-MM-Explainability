@@ -82,7 +82,7 @@ class GeneratorOurs:
 
         self.all_attn_t_i = []
 
-        self.lrp_R_t_i = []
+        # self.lrp_R_t_i = []
 
 
 
@@ -122,38 +122,38 @@ class GeneratorOurs:
 
 
 
-    # def handle_co_attn_self_lang(self, block):
-    #     grad = block.lang_self_att.self.get_attn_gradients().detach()
-    #     if self.use_lrp:
-    #         cam = block.lang_self_att.self.get_attn_cam().detach()
-    #     else:
-    #         cam = block.lang_self_att.self.get_attn().detach()
-    #     cam = avg_heads(cam, grad)
-    #     R_t_t_add, R_t_i_add = apply_self_attention_rules(self.R_t_t, self.R_t_i, cam)
-    #     self.R_t_t += R_t_t_add
-    #     self.R_t_i += R_t_i_add
-    #     # print(self.R_t_t)
-    #     self.text_R.append(self.R_t_t.detach().clone())
-    #     self.text_image_R.append(self.R_t_i.detach().clone())
-    #     self.co_self_attn_lang_grads.append(grad)
-    #     self.co_attn_lang_agg.append(cam)
-
     def handle_co_attn_self_lang(self, block):
-            grad = block.lang_self_att.self.get_attn_gradients().detach()
-            # if self.use_lrp:
+        grad = block.lang_self_att.self.get_attn_gradients().detach()
+        if self.use_lrp:
             cam = block.lang_self_att.self.get_attn_cam().detach()
-            self.lrp_R_t_i.append(cam)
-            # else:
+        else:
             cam = block.lang_self_att.self.get_attn().detach()
-            cam = avg_heads(cam, grad)
-            R_t_t_add, R_t_i_add = apply_self_attention_rules(self.R_t_t, self.R_t_i, cam)
-            self.R_t_t += R_t_t_add
-            self.R_t_i += R_t_i_add
-            # print(self.R_t_t)
-            self.text_R.append(self.R_t_t.detach().clone())
-            self.text_image_R.append(self.R_t_i.detach().clone())
-            self.co_self_attn_lang_grads.append(grad)
-            self.co_attn_lang_agg.append(cam)
+        cam = avg_heads(cam, grad)
+        R_t_t_add, R_t_i_add = apply_self_attention_rules(self.R_t_t, self.R_t_i, cam)
+        self.R_t_t += R_t_t_add
+        self.R_t_i += R_t_i_add
+        # print(self.R_t_t)
+        self.text_R.append(self.R_t_t.detach().clone())
+        self.text_image_R.append(self.R_t_i.detach().clone())
+        self.co_self_attn_lang_grads.append(grad)
+        self.co_attn_lang_agg.append(cam)
+
+    # def handle_co_attn_self_lang(self, block):
+    #         grad = block.lang_self_att.self.get_attn_gradients().detach()
+    #         # if self.use_lrp:
+    #         cam = block.lang_self_att.self.get_attn_cam().detach()
+    #         self.lrp_R_t_i.append(cam)
+    #         # else:
+    #         cam = block.lang_self_att.self.get_attn().detach()
+    #         cam = avg_heads(cam, grad)
+    #         R_t_t_add, R_t_i_add = apply_self_attention_rules(self.R_t_t, self.R_t_i, cam)
+    #         self.R_t_t += R_t_t_add
+    #         self.R_t_i += R_t_i_add
+    #         # print(self.R_t_t)
+    #         self.text_R.append(self.R_t_t.detach().clone())
+    #         self.text_image_R.append(self.R_t_i.detach().clone())
+    #         self.co_self_attn_lang_grads.append(grad)
+    #         self.co_attn_lang_agg.append(cam)
 
 
 
