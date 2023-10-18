@@ -402,6 +402,12 @@ class LxmertAttention(nn.Module):
 
         query_layer = self.transpose_for_scores(mixed_query_layer)
         key_layer = self.transpose_for_scores(mixed_key_layer)
+
+        ####################################################################
+        if not hasattr(self, 'cross_attn_visual_feats'):
+            self.cross_attn_visual_feats = key_layer
+
+        ####################################################################
         value_layer = self.transpose_for_scores(mixed_value_layer)
 
         # Take the dot product between "query" and "key" to get the raw attention scores.

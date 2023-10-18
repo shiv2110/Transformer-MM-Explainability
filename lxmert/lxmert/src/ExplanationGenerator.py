@@ -280,7 +280,7 @@ class GeneratorOurs:
             self.handle_co_attn_self_image(blk)
 
             # self.cross_attn_viz_feat.append(blk.cross_attn_visual_feats)
-            self.cross_attn_viz_feat.append(blk.visual_attention_copy.att.key)
+            self.cross_attn_viz_feat.append(blk.visual_attention_copy.att.cross_attn_visual_feats)
 
 
         # take care of last cross attention layer- only text
