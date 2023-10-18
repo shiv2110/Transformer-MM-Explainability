@@ -652,7 +652,7 @@ class LxmertXLayer(nn.Module):
     ):
         #################################################
         if not hasattr(self, 'cross_attn_visual_feats'):
-            self.cross_attn_visual_feats = visual_input
+            self.cross_attn_visual_feats = visual_input.detach().clone()
 
         #################################################
 
