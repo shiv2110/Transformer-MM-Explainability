@@ -354,6 +354,7 @@ class LxmertAttention(nn.Module):
         self.attn = None
         self.attn_gradients = None
         self.attn_cam = None
+        self.attn_scores = None
         
 
     def get_attn(self):
@@ -368,6 +369,11 @@ class LxmertAttention(nn.Module):
 
     def save_attn_cam(self, attn_cam):
         self.attn_cam = attn_cam
+
+################################################
+    def save_attn_cam(self, attn_scores):
+        self.attn_scores = attn_scores
+################################################
 
     def save_attn_gradients(self, attn_gradients):
         self.attn_gradients = attn_gradients
@@ -400,6 +406,11 @@ class LxmertAttention(nn.Module):
 
         # Take the dot product between "query" and "key" to get the raw attention scores.
         attention_scores = self.matmul1([query_layer, key_layer.transpose(-1, -2)])
+
+        ################################
+        self.save_attn(attention_scores)
+        ################################
+
         attention_scores = attention_scores / math.sqrt(self.attention_head_size)
         # Apply the attention mask is (precomputed for all layers in BertModel forward() function)
         if attention_mask is not None:
@@ -639,6 +650,13 @@ class LxmertXLayer(nn.Module):
             visual_attention_mask,
             output_x_attentions=False,
     ):
+        #################################################
+        if not hasattr(self, 'cross_attn_visual_feats'):
+            self.cross_attn_visual_feats = copy.deepcopy(visual_input)
+
+        #################################################
+
+
         lang_input1, lang_input2 = self.clone1(lang_input, 2)
         visual_input1, visual_input2 = self.clone2(visual_input, 2)
         if not hasattr(self, 'visual_attention_copy'):
@@ -821,6 +839,7 @@ class LxmertEncoder(nn.Module):
                 language_attentions = language_attentions + (l_outputs[1],)
 
         # Run relational layers
+        ####################################################################################################
         for layer_module in self.r_layers:
             v_outputs = layer_module(visual_feats, visual_attention_mask, output_attentions=output_attentions)
             visual_feats = v_outputs[0]

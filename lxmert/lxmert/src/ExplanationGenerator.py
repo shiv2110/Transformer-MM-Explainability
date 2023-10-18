@@ -82,6 +82,7 @@ class GeneratorOurs:
 
         self.all_attn_t_i = []
 
+        self.cross_attn_viz_feat = []
         # self.lrp_R_t_i = []
 
 
@@ -277,6 +278,8 @@ class GeneratorOurs:
 
             # image self attention
             self.handle_co_attn_self_image(blk)
+
+            self.cross_attn_viz_feat.append(blk.cross_attn_visual_feats)
 
 
         # take care of last cross attention layer- only text
