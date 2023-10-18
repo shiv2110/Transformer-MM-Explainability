@@ -404,8 +404,8 @@ class LxmertAttention(nn.Module):
         key_layer = self.transpose_for_scores(mixed_key_layer)
 
         ####################################################################
-        if not hasattr(self, 'cross_attn_visual_feats'):
-            self.cross_attn_visual_feats = key
+        # if not hasattr(self, 'cross_attn_visual_feats'):
+        #     self.cross_attn_visual_feats = key
 
         ####################################################################
         value_layer = self.transpose_for_scores(mixed_value_layer)
