@@ -289,6 +289,9 @@ class GeneratorOurs:
 
         # take care of last cross attention layer- only text
         blk = model.lxmert.encoder.x_layers[-1]
+
+        self.cross_attn_viz_feat.append(blk.cross_attn_visual_feats.detach().clone())
+        self.cross_attn_lg_feat.append(blk.cross_attn_lang_feats.detach().clone())
         # cross attn- first for language then for image
         R_t_i_addition, R_t_t_addition = self.handle_co_attn_lang(blk)
         self.R_t_i += R_t_i_addition
