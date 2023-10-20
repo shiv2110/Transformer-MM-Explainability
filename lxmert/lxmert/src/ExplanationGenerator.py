@@ -83,6 +83,8 @@ class GeneratorOurs:
         self.all_attn_t_i = []
 
         self.cross_attn_viz_feat = []
+        self.cross_attn_lg_feat = []
+
         # self.lrp_R_t_i = []
 
 
@@ -280,6 +282,8 @@ class GeneratorOurs:
             self.handle_co_attn_self_image(blk)
 
             self.cross_attn_viz_feat.append(blk.cross_attn_visual_feats.detach().clone())
+            self.cross_attn_lg_feat.append(blk.cross_attn_lang_feats.detach().clone())
+
             # self.cross_attn_viz_feat.append(blk.visual_attention_copy.att.cross_attn_visual_feats)
 
 

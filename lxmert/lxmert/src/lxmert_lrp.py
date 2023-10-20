@@ -660,6 +660,9 @@ class LxmertXLayer(nn.Module):
         if not hasattr(self, 'cross_attn_visual_feats'):
             self.cross_attn_visual_feats = visual_input
 
+        if not hasattr(self, 'cross_attn_lang_feats'):
+            self.cross_attn_lang_feats = lang_input
+
         #################################################
 
 
@@ -845,7 +848,6 @@ class LxmertEncoder(nn.Module):
                 language_attentions = language_attentions + (l_outputs[1],)
 
         # Run relational layers
-        ####################################################################################################
         for layer_module in self.r_layers:
             v_outputs = layer_module(visual_feats, visual_attention_mask, output_attentions=output_attentions)
             visual_feats = v_outputs[0]
@@ -854,6 +856,7 @@ class LxmertEncoder(nn.Module):
                 vision_attentions = vision_attentions + (v_outputs[1],)
 
         # Run cross-modality layers
+        ####################################################################################################
         for layer_module in self.x_layers:
             x_outputs = layer_module(
                 lang_feats,
