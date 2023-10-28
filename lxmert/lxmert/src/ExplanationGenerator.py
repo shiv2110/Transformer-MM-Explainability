@@ -86,6 +86,7 @@ class GeneratorOurs:
         self.cross_attn_lg_feat = []
 
         self.attn_viz_feats = []
+        self.cross_attn_viz_feat_list = []
 
         # self.lrp_R_t_i = []
 
@@ -257,6 +258,8 @@ class GeneratorOurs:
 
         # cross attn layers
         blocks = model.lxmert.encoder.x_layers
+        self.cross_attn_viz_feat_list = model.lxmert.encoder.visual_feats_list_x
+
         for i, blk in enumerate(blocks):
             # in the last cross attention module, only the text cross modal
             # attention has an impact on the CLS token, since it's the first

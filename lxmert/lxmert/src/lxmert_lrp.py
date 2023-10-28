@@ -822,6 +822,7 @@ class LxmertEncoder(nn.Module):
         self.r_layers = nn.ModuleList([LxmertLayer(config) for _ in range(self.num_r_layers)])
 
         self.visual_feats_list_r = []
+        self.visual_feats_list_x = []
         self.lang_feats_list_r = []
 
 
@@ -875,7 +876,7 @@ class LxmertEncoder(nn.Module):
             lang_feats, visual_feats = x_outputs[:2]
 
 
-            # self.visual_feats_list.append(visual_feats.detach().clone())
+            self.visual_feats_list_x.append(visual_feats.detach().clone())
             # self.lang_feats_list.append(lang_feats.detach().clone())
 
 
