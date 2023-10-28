@@ -85,6 +85,8 @@ class GeneratorOurs:
         self.cross_attn_viz_feat = []
         self.cross_attn_lg_feat = []
 
+        self.attn_viz_feats = []
+
         # self.lrp_R_t_i = []
 
 
@@ -251,6 +253,7 @@ class GeneratorOurs:
         # image self attention
         blocks = model.lxmert.encoder.r_layers
         self.handle_self_attention_image(blocks)
+        self.attn_viz_feats = model.lxmert.encoder.visual_feats_list_r
 
         # cross attn layers
         blocks = model.lxmert.encoder.x_layers
