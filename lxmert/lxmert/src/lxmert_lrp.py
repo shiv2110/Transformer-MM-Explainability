@@ -24,7 +24,8 @@ from typing import Optional, Tuple
 import torch
 from torch import nn
 from torch.nn import CrossEntropyLoss, SmoothL1Loss
-from lxmert.lxmert.src.layers import *
+# from lxmert.lxmert.src.layers import *
+from .layers import *
 from transformers.file_utils import (
     ModelOutput,
     add_code_sample_docstrings,

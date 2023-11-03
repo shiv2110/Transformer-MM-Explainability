@@ -1,0 +1,51 @@
+[
+    
+    {
+        "answer_type": "yes/no",
+        "img_id": "COCO_val2014_000000185590",
+        "label": {
+            "leaves": 0.6,
+            "no": 0.9,
+            "yes": 1
+        },
+        "question_id": 185590000,
+        "question_type": "is the",
+        "sent": "Is the animal eating?"
+    },
+
+    {
+        "answer_type": "yes/no",
+        "img_id": "COCO_val2014_000000127510",
+        "label": {
+            "yes": 1
+        },
+        "question_id": 127510000,
+        "question_type": "none of the above",
+        "sent": "Did he catch the ball?"
+    },
+    
+    {
+        "answer_type": "yes/no",
+        "img_id": "COCO_val2014_000000324266",
+        "label": {
+            "yes": 1
+        },
+        "question_id": 324266002,
+        "question_type": "is the",
+        "sent": "Is the tub white?"
+    },
+
+    {
+        "answer_type": "yes/no",
+        "img_id": "COCO_val2014_000000200717",
+        "label": {
+            "no": 1,
+            "yes": 1
+        },
+        "question_id": 200717014,
+        "question_type": "none of the above",
+        "sent": "Did the man just catch the frisbee?"
+    }
+
+
+]

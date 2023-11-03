@@ -23,7 +23,8 @@ import torch
 import torch.nn.functional as F
 from PIL import Image
 
-from lxmert.lxmert.src.vqa_utils import img_tensorize
+# from lxmert.lxmert.src.vqa_utils import img_tensorize
+from .vqa_utils import img_tensorize
 
 
 class ResizeShortestEdge:

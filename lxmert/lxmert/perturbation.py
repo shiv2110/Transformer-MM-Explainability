@@ -1,18 +1,30 @@
-from lxmert.lxmert.src.tasks import vqa_data
-from lxmert.lxmert.src.modeling_frcnn import GeneralizedRCNN
-import lxmert.lxmert.src.vqa_utils as utils
-from lxmert.lxmert.src.processing_image import Preprocess
+# from lxmert.lxmert.src.tasks import vqa_data
+# from lxmert.lxmert.src.modeling_frcnn import GeneralizedRCNN
+# import lxmert.lxmert.src.vqa_utils as utils
+# from lxmert.lxmert.src.processing_image import Preprocess
+# from transformers import LxmertTokenizer
+# from lxmert.lxmert.src.huggingface_lxmert import LxmertForQuestionAnswering
+# from lxmert.lxmert.src.lxmert_lrp import LxmertForQuestionAnswering as LxmertForQuestionAnsweringLRP
+# from tqdm import tqdm
+# from lxmert.lxmert.src.ExplanationGenerator import GeneratorOurs, GeneratorBaselines, GeneratorOursAblationNoAggregation
+# from lxmert.lxmert.src.param import args
+from src.tasks import vqa_data
+from src.modeling_frcnn import GeneralizedRCNN
+import src.vqa_utils as utils
+from src.processing_image import Preprocess
 from transformers import LxmertTokenizer
-from lxmert.lxmert.src.huggingface_lxmert import LxmertForQuestionAnswering
-from lxmert.lxmert.src.lxmert_lrp import LxmertForQuestionAnswering as LxmertForQuestionAnsweringLRP
+from src.huggingface_lxmert import LxmertForQuestionAnswering
+from src.lxmert_lrp import LxmertForQuestionAnswering as LxmertForQuestionAnsweringLRP
 from tqdm import tqdm
-from lxmert.lxmert.src.ExplanationGenerator import GeneratorOurs, GeneratorBaselines, GeneratorOursAblationNoAggregation
+from src.ExplanationGenerator import GeneratorOurs, GeneratorBaselines, GeneratorOursAblationNoAggregation
+from src.param import args
 import random
-from lxmert.lxmert.src.param import args
 
 OBJ_URL = "https://raw.githubusercontent.com/airsplay/py-bottom-up-attention/master/demo/data/genome/1600-400-20/objects_vocab.txt"
 ATTR_URL = "https://raw.githubusercontent.com/airsplay/py-bottom-up-attention/master/demo/data/genome/1600-400-20/attributes_vocab.txt"
 VQA_URL = "https://raw.githubusercontent.com/airsplay/lxmert/master/data/vqa/trainval_label2ans.json"
+# VQA_URL = "../../data/vqa/trainval_label2ans.json"
+
 
 class ModelPert:
     def __init__(self, COCO_val_path, use_lrp=False):
@@ -210,8 +222,10 @@ def main(args):
     iterator = tqdm([vqa_dataset.data[i] for i in pert_samples_indices])
 
     test_type = "positive" if args.is_positive_pert else "negative"
+    # print("hellooooo")
+    # print(args.is_text_pert)
     modality = "text" if args.is_text_pert else "image"
-    print("runnig {0} pert test for {1} modality with method {2}".format(test_type, modality, args.method))
+    print("running {0} pert test for {1} modality with method {2}".format(test_type, modality, args.method))
 
     for index, item in enumerate(iterator):
         if method_name == 'transformer_att':
@@ -236,11 +250,21 @@ def main(args):
             R_t_t, R_t_i = ours.generate_ours(item, use_lrp=False, apply_self_in_rule_10=False)
         elif method_name == "ablation_no_aggregation":
             R_t_t, R_t_i = oursNoAggAblation.generate_ours_no_agg(item, use_lrp=False, normalize_self_attention=False)
+
+        elif method_name == "dsm":
+            R_t_t, R_t_i = ours.generate_ours_dsm(item, use_lrp = False)
+
         else:
             print("Please enter a valid method name")
             return
-        cam_image = R_t_i[0]
-        cam_text = R_t_t[0]
+        
+        if method_name == 'dsm':
+            cam_image = R_t_i
+            cam_text = R_t_t
+        else:
+            cam_image = R_t_i[0]
+            cam_text = R_t_t[0]
+
         cam_image = (cam_image - cam_image.min()) / (cam_image.max() - cam_image.min())
         cam_text = (cam_text - cam_text.min()) / (cam_text.max() - cam_text.min())
         if args.is_text_pert:

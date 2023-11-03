@@ -556,4 +556,5 @@ def img_tensorize(im, input_format="RGB"):
 
 
 def chunk(images, batch=1):
+    print(batch)
     return (images[i : i + batch] for i in range(0, len(images), batch))

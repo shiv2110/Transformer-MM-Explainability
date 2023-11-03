@@ -8,7 +8,7 @@ import time
 
 import numpy as np
 
-csv.field_size_limit(sys.maxsize)
+# csv.field_size_limit(sys.maxsize)
 FIELDNAMES = ["img_id", "img_h", "img_w", "objects_id", "objects_conf",
               "attrs_id", "attrs_conf", "num_boxes", "boxes", "features"]
 
