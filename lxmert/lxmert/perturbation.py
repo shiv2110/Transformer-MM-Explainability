@@ -19,6 +19,10 @@ from tqdm import tqdm
 from src.ExplanationGenerator import GeneratorOurs, GeneratorBaselines, GeneratorOursAblationNoAggregation
 from src.param import args
 import random
+# import os
+
+
+# os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:512"
 
 OBJ_URL = "https://raw.githubusercontent.com/airsplay/py-bottom-up-attention/master/demo/data/genome/1600-400-20/objects_vocab.txt"
 ATTR_URL = "https://raw.githubusercontent.com/airsplay/py-bottom-up-attention/master/demo/data/genome/1600-400-20/attributes_vocab.txt"
@@ -274,5 +278,7 @@ def main(args):
         curr_pert_result = [round(res / (index+1) * 100, 2) for res in curr_pert_result]
         iterator.set_description("Acc: {}".format(curr_pert_result))
 
+
 if __name__ == "__main__":
     main(args)
+    # os.environ["PYTORCH_CUDA_ALLOC_CONF"] = ""

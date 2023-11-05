@@ -96,6 +96,8 @@ def parse_args():
                                  'raw_attn', 'attn_gradcam', 'ours_with_lrp_no_normalization', 'ours_no_lrp',
                                  'ours_no_lrp_no_norm', 'ablation_no_aggregation', 'ablation_no_self_in_10'],
                         help='')
+    
+    ####### what does this arg do? #################
     parser.add_argument('--num-samples', type=int,
                         default=10000,
                         help='')
