@@ -420,6 +420,7 @@ class GeneratorOurs:
         # self.text_R[-1][0, 0] = 0
 
         temp = self.cross_attn_viz_feat[-1].squeeze().cpu().numpy()
+        print(temp[0][0])
         temp = np.matmul(temp, np.transpose(temp))
 
         W = np.where(temp > 0, temp, 0)
