@@ -311,6 +311,7 @@ class GeneratorOurs:
         # disregard the [CLS] token itself
         self.R_t_t[0, 0] = 0
         self.text_R[-1][0, 0] = 0
+        # print(self.R_t_i[0][0])
         return self.R_t_t, self.R_t_i
     
 
@@ -325,7 +326,7 @@ class GeneratorOurs:
         self.attn_viz_feats = []
         self.cross_attn_viz_feat_list = []
 
-
+        # print(len(self.cross_attn_viz_feat))
         kwargs = {"alpha": 1}
         output = self.model_usage.forward(input).question_answering_score
         model = self.model_usage.model
@@ -344,20 +345,20 @@ class GeneratorOurs:
         # self.R_i_t = torch.zeros(image_bboxes, text_tokens).to(model.device)
 
 
-        if index is None:
-            index = np.argmax(output.cpu().data.numpy(), axis=-1)
+        # if index is None:
+        #     index = np.argmax(output.cpu().data.numpy(), axis=-1)
 
-        one_hot = np.zeros((1, output.size()[-1]), dtype=np.float32)
-        one_hot[0, index] = 1
-        one_hot_vector = one_hot
-        one_hot = torch.from_numpy(one_hot).requires_grad_(True)
-        one_hot = torch.sum(one_hot.cuda() * output)
+        # one_hot = np.zeros((1, output.size()[-1]), dtype=np.float32)
+        # one_hot[0, index] = 1
+        # one_hot_vector = one_hot
+        # one_hot = torch.from_numpy(one_hot).requires_grad_(True)
+        # one_hot = torch.sum(one_hot.cuda() * output)
 
         model.zero_grad()
         # with torch
-        one_hot.backward(retain_graph=True)
-        if self.use_lrp:
-            model.relprop(torch.tensor(one_hot_vector).to(output.device), **kwargs)
+        # one_hot.backward(retain_graph=True)
+        # if self.use_lrp:
+        #     model.relprop(torch.tensor(one_hot_vector).to(output.device), **kwargs)
 
         # # language self attention
         # blocks = model.lxmert.encoder.layer
@@ -371,6 +372,7 @@ class GeneratorOurs:
         # cross attn layers
         blocks = model.lxmert.encoder.x_layers
         self.cross_attn_viz_feat_list = model.lxmert.encoder.visual_feats_list_x
+        # print(self.cross_attn_viz_feat_list[-2][0][0])
 
         for i, blk in enumerate(blocks):
             # in the last cross attention module, only the text cross modal
@@ -419,8 +421,10 @@ class GeneratorOurs:
         # self.R_t_t[0, 0] = 0
         # self.text_R[-1][0, 0] = 0
 
-        temp = self.cross_attn_viz_feat[-1].squeeze().cpu().numpy()
-        print(temp[0][0])
+        # temp = self.cross_attn_viz_feat[-1].squeeze().cpu().numpy()
+        temp = self.cross_attn_viz_feat_list[-2].squeeze().cpu().numpy()
+
+        # print(temp[0][0])
         temp = np.matmul(temp, np.transpose(temp))
 
         W = np.where(temp > 0, temp, 0)

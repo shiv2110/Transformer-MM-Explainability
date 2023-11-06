@@ -659,10 +659,10 @@ class LxmertXLayer(nn.Module):
     ):
         #################################################
         if not hasattr(self, 'cross_attn_visual_feats'):
-            self.cross_attn_visual_feats = visual_input
+            self.cross_attn_visual_feats = visual_input.clone()
 
         if not hasattr(self, 'cross_attn_lang_feats'):
-            self.cross_attn_lang_feats = lang_input
+            self.cross_attn_lang_feats = lang_input.clone()
 
         #################################################
 
