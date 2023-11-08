@@ -437,15 +437,15 @@ class GeneratorOurs:
         eigenvalues, eigenvectors = eigsh(L, k = 5, sigma = 0, which = 'LM')
         eigenvalues, eigenvectors = torch.from_numpy(eigenvalues), torch.from_numpy(eigenvectors.T).float()
 
-        # # abs max should always be positive
-        # for k in range(eigenvectors.shape[0]):
-        #     if abs(eigenvectors[k]).max().item() != eigenvectors[k].max().item():
-        #         eigenvectors[k] = 0 - eigenvectors[k]
-
-        # ve+ values mean between 0.5 and 1.0
+        # abs max should always be positive
         for k in range(eigenvectors.shape[0]):
-            if 0.5 < torch.mean((eigenvectors[k] > 0).float()).item() < 1.:  # reverse segment
+            if abs(eigenvectors[k]).max().item() != eigenvectors[k].max().item():
                 eigenvectors[k] = 0 - eigenvectors[k]
+
+        # # ve+ values mean between 0.5 and 1.0
+        # for k in range(eigenvectors.shape[0]):
+        #     if 0.5 < torch.mean((eigenvectors[k] > 0).float()).item() < 1.:  # reverse segment
+        #         eigenvectors[k] = 0 - eigenvectors[k]
 
         return eigenvectors[1], eigenvectors[1]
 
