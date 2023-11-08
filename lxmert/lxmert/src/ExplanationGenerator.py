@@ -316,7 +316,7 @@ class GeneratorOurs:
     
 
 
-    def generate_ours_dsm(self, input, index=None, use_lrp=True, normalize_self_attention=True, apply_self_in_rule_10=True, method_name="ours"):
+    def generate_ours_dsm(self, input, sign_method, index=None, use_lrp=True, normalize_self_attention=True, apply_self_in_rule_10=True, method_name="ours"):
         self.use_lrp = use_lrp
         self.normalize_self_attention = normalize_self_attention
         self.apply_self_in_rule_10 = apply_self_in_rule_10
@@ -437,15 +437,18 @@ class GeneratorOurs:
         eigenvalues, eigenvectors = eigsh(L, k = 5, sigma = 0, which = 'LM')
         eigenvalues, eigenvectors = torch.from_numpy(eigenvalues), torch.from_numpy(eigenvectors.T).float()
 
-        # abs max should always be positive
-        for k in range(eigenvectors.shape[0]):
-            if abs(eigenvectors[k]).max().item() != eigenvectors[k].max().item():
-                eigenvectors[k] = 0 - eigenvectors[k]
 
-        # # ve+ values mean between 0.5 and 1.0
-        # for k in range(eigenvectors.shape[0]):
-        #     if 0.5 < torch.mean((eigenvectors[k] > 0).float()).item() < 1.:  # reverse segment
-        #         eigenvectors[k] = 0 - eigenvectors[k]
+        if sign_method == 'max':
+            # abs max should always be positive
+            for k in range(eigenvectors.shape[0]):
+                if abs(eigenvectors[k]).max().item() != eigenvectors[k].max().item():
+                    eigenvectors[k] = 0 - eigenvectors[k]
+
+        elif sign_method == 'mean':
+            # ve+ values mean between 0.5 and 1.0
+            for k in range(eigenvectors.shape[0]):
+                if 0.5 < torch.mean((eigenvectors[k] > 0).float()).item() < 1.:  # reverse segment
+                    eigenvectors[k] = 0 - eigenvectors[k]
 
         return eigenvectors[1], eigenvectors[1]
 

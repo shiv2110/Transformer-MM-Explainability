@@ -101,6 +101,13 @@ def parse_args():
     parser.add_argument('--num-samples', type=int,
                         default=10000,
                         help='')
+    
+    parser.add_argument('--sign-method', type = str,
+                        default = 'max',
+                        help = 'OPTIONS: max, mean')
+
+
+
     parser.add_argument('--is-positive-pert', type=bool,
                         default=False,
                         help='')

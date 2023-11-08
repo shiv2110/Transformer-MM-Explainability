@@ -256,7 +256,7 @@ def main(args):
             R_t_t, R_t_i = oursNoAggAblation.generate_ours_no_agg(item, use_lrp=False, normalize_self_attention=False)
 
         elif method_name == "dsm":
-            R_t_t, R_t_i = ours.generate_ours_dsm(item, use_lrp = False)
+            R_t_t, R_t_i = ours.generate_ours_dsm(item, args.sign_method, use_lrp = False)
 
         else:
             print("Please enter a valid method name")
