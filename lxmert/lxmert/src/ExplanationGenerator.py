@@ -325,6 +325,8 @@ class GeneratorOurs:
         self.cross_attn_lg_feat = []
         self.attn_viz_feats = []
         self.cross_attn_viz_feat_list = []
+        self.cross_attn_lg_feat_list = []
+
 
         # print(len(self.cross_attn_viz_feat))
         kwargs = {"alpha": 1}
@@ -372,6 +374,8 @@ class GeneratorOurs:
         # cross attn layers
         blocks = model.lxmert.encoder.x_layers
         self.cross_attn_viz_feat_list = model.lxmert.encoder.visual_feats_list_x
+        self.cross_attn_lg_feat_list = model.lxmert.encoder.lang_feats_list_x
+
         # print(self.cross_attn_viz_feat_list[-2][0][0])
 
         for i, blk in enumerate(blocks):

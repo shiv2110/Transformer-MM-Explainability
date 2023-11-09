@@ -824,6 +824,7 @@ class LxmertEncoder(nn.Module):
 
         self.visual_feats_list_r = []
         self.visual_feats_list_x = []
+        self.lang_feats_list_x = []
         self.lang_feats_list_r = []
 
 
@@ -878,7 +879,7 @@ class LxmertEncoder(nn.Module):
 
 
             self.visual_feats_list_x.append(visual_feats.detach().clone())
-            # self.lang_feats_list.append(lang_feats.detach().clone())
+            self.lang_feats_list_x.append(lang_feats.detach().clone())
 
 
             vision_hidden_states = vision_hidden_states + (visual_feats,)
