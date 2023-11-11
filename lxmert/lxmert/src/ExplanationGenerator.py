@@ -75,7 +75,7 @@ class GeneratorOurs:
         self.co_attn_lang_agg = []
         self.co_attn_image_agg = []
 
-        self.attn_t_i = []
+        # self.attn_t_i = []
         self.attn_i_t = []
         self.attn_t_t = []
         self.attn_grads_t_i = []
@@ -219,6 +219,9 @@ class GeneratorOurs:
         kwargs = {"alpha": 1}
         output = self.model_usage.forward(input).question_answering_score
         model = self.model_usage.model
+
+        self.attn_t_i = []
+
 
         # initialize relevancy matrices
         text_tokens = self.model_usage.text_len

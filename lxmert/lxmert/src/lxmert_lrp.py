@@ -372,8 +372,8 @@ class LxmertAttention(nn.Module):
         self.attn_cam = attn_cam
 
 ################################################
-    def save_attn_cam(self, attn_scores):
-        self.attn_scores = attn_scores
+    # def save_attn_cam(self, attn_scores):
+    #     self.attn_scores = attn_scores
 ################################################
 
     def save_attn_gradients(self, attn_gradients):
