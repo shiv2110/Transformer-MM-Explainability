@@ -86,7 +86,7 @@ class AttentionPool2d(nn.Module):
             training=self.training,
             need_weights=False
         )
-
+        print(x.shape)
         return x[0]
 
 
@@ -188,6 +188,7 @@ class ResidualAttentionBlock(nn.Module):
         self.attn_grad = attn_grad
 
     def attention(self, x: torch.Tensor):
+        print("Hello there {}!!!".format(x.shape))
         self.attn_mask = self.attn_mask.to(dtype=x.dtype, device=x.device) if self.attn_mask is not None else None
         return self.attn(x, x, x, need_weights=False, attn_mask=self.attn_mask, attention_probs_forward_hook=self.set_attn_probs,
                          attention_probs_backwards_hook=self.set_attn_grad)[0]
@@ -364,6 +365,7 @@ class CLIP(nn.Module):
     def forward(self, image, text):
         image_features = self.encode_image(image)
         text_features = self.encode_text(text)
+        # print("Here you go girl: {}".format(image_features.shape))
 
         # normalized features
         image_features = image_features / image_features.norm(dim=-1, keepdim=True)
@@ -375,7 +377,7 @@ class CLIP(nn.Module):
         logits_per_text = logit_scale * text_features @ image_features.t()
 
         # shape = [global_batch_size, global_batch_size]
-        return logits_per_image, logits_per_text
+        return logits_per_image, logits_per_text, image_features
 
 
 def convert_weights(model: nn.Module):

@@ -319,116 +319,29 @@ class GeneratorOurs:
     
 
 
-    def generate_ours_dsm(self, input, sign_method, index=None, use_lrp=True, normalize_self_attention=True, apply_self_in_rule_10=True, method_name="ours"):
+    def generate_ours_dsm(self, input, sign_method, index=None, use_lrp=True, normalize_self_attention=True, apply_self_in_rule_10=True, method_name="dsm"):
         self.use_lrp = use_lrp
         self.normalize_self_attention = normalize_self_attention
         self.apply_self_in_rule_10 = apply_self_in_rule_10
 
-        self.cross_attn_viz_feat = []
-        self.cross_attn_lg_feat = []
-        self.attn_viz_feats = []
+        # self.cross_attn_viz_feat = []
+        # self.cross_attn_lg_feat = []
+        # self.attn_viz_feats = []
         self.cross_attn_viz_feat_list = []
         self.cross_attn_lg_feat_list = []
 
 
         # print(len(self.cross_attn_viz_feat))
-        kwargs = {"alpha": 1}
+        # kwargs = {"alpha": 1}
         output = self.model_usage.forward(input).question_answering_score
         model = self.model_usage.model
 
-        ## initialize relevancy matrices
-        # text_tokens = self.model_usage.text_len
-        # image_bboxes = self.model_usage.image_boxes_len
-
-        # text self attention matrix
-        # self.R_t_t = torch.eye(text_tokens, text_tokens).to(model.device)
-        # # image self attention matrix
-        # self.R_i_i = torch.eye(image_bboxes, image_bboxes).to(model.device)
-        # # impact of images on text
-        # self.R_t_i = torch.zeros(text_tokens, image_bboxes).to(model.device)
-        # # impact of text on images
-        # self.R_i_t = torch.zeros(image_bboxes, text_tokens).to(model.device)
-
-
-        # if index is None:
-        #     index = np.argmax(output.cpu().data.numpy(), axis=-1)
-
-        # one_hot = np.zeros((1, output.size()[-1]), dtype=np.float32)
-        # one_hot[0, index] = 1
-        # one_hot_vector = one_hot
-        # one_hot = torch.from_numpy(one_hot).requires_grad_(True)
-        # one_hot = torch.sum(one_hot.cuda() * output)
-
         model.zero_grad()
-        # with torch
-        # one_hot.backward(retain_graph=True)
-        # if self.use_lrp:
-        #     model.relprop(torch.tensor(one_hot_vector).to(output.device), **kwargs)
-
-        # # language self attention
-        # blocks = model.lxmert.encoder.layer
-        # self.handle_self_attention_lang(blocks)
-
-        # # image self attention
-        # blocks = model.lxmert.encoder.r_layers
-        # self.handle_self_attention_image(blocks)
-        # self.attn_viz_feats = model.lxmert.encoder.visual_feats_list_r
-
-        # cross attn layers
         blocks = model.lxmert.encoder.x_layers
         self.cross_attn_viz_feat_list = model.lxmert.encoder.visual_feats_list_x
         self.cross_attn_lg_feat_list = model.lxmert.encoder.lang_feats_list_x
 
-        # print(self.cross_attn_viz_feat_list[-2][0][0])
 
-        for i, blk in enumerate(blocks):
-            # in the last cross attention module, only the text cross modal
-            # attention has an impact on the CLS token, since it's the first
-            # token in the language tokens
-            if i == len(blocks) - 1:
-                break
-            # cross attn- first for language then for image
-            # R_t_i_addition, R_t_t_addition = self.handle_co_attn_lang(blk)
-            # R_i_t_addition, R_i_i_addition = self.handle_co_attn_image(blk)
-
-            # self.R_t_i += R_t_i_addition
-            # self.R_t_t += R_t_t_addition
-            # self.R_i_t += R_i_t_addition
-            # self.R_i_i += R_i_i_addition
-
-
-            ## language self attention
-            # self.handle_co_attn_self_lang(blk)
-
-            ## image self attention
-            # self.handle_co_attn_self_image(blk)
-
-            self.cross_attn_viz_feat.append(blk.cross_attn_visual_feats.detach().clone())
-            self.cross_attn_lg_feat.append(blk.cross_attn_lang_feats.detach().clone())
-
-            # self.cross_attn_viz_feat.append(blk.visual_attention_copy.att.cross_attn_visual_feats)
-
-        # take care of last cross attention layer- only text
-        blk = model.lxmert.encoder.x_layers[-1]
-
-        self.cross_attn_viz_feat.append(blk.cross_attn_visual_feats.detach().clone())
-        self.cross_attn_lg_feat.append(blk.cross_attn_lang_feats.detach().clone())
-        ## cross attn- first for language then for image
-        # R_t_i_addition, R_t_t_addition = self.handle_co_attn_lang(blk)
-        # self.R_t_i += R_t_i_addition
-        # self.R_t_t += R_t_t_addition
-
-        # self.text_image_R.append(self.R_t_i.detach().clone())
-        # self.text_R.append(self.R_t_t.detach().clone())
-
-        # language self attention
-        # self.handle_co_attn_self_lang(blk)
-
-        # disregard the [CLS] token itself
-        # self.R_t_t[0, 0] = 0
-        # self.text_R[-1][0, 0] = 0
-
-        # temp = self.cross_attn_viz_feat[-1].squeeze().cpu().numpy()
         temp = self.cross_attn_viz_feat_list[-2].squeeze().cpu().numpy()
 
         # print(temp[0][0])
