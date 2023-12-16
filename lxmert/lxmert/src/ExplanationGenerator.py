@@ -2,6 +2,9 @@ import numpy as np
 import torch
 import copy
 from scipy.sparse.linalg import eigsh
+import torch.nn.functional as F
+from pymatting.util.util import row_sum
+from scipy.sparse import diags
 
 def compute_rollout_attention(all_layer_matrices, start_layer=0):
     # adding residual consideration
@@ -342,20 +345,41 @@ class GeneratorOurs:
         self.cross_attn_lg_feat_list = model.lxmert.encoder.lang_feats_list_x
 
 
-        temp = self.cross_attn_viz_feat_list[-2].squeeze().cpu().numpy()
+        feats = self.cross_attn_viz_feat_list[-2].squeeze().cpu()
+        # temp = self.cross_attn_viz_feat_list[-2].squeeze().cpu()
 
-        # print(temp[0][0])
-        temp = np.matmul(temp, np.transpose(temp))
 
-        W = np.where(temp > 0, temp, 0)
+        # feats = F.normalize(feats, p = 2, dim = -1)
 
-        D = np.zeros(W.shape)
-        for i in range(W.shape[0]):
-            D[i, i] = np.sum(W[i])
+        W_feat = (feats @ feats.T)
 
-        L = D - W
-        eigenvalues, eigenvectors = eigsh(L, k = 5, sigma = 0, which = 'LM')
+        W_feat = (W_feat * (W_feat > 0))
+        W_feat = W_feat / W_feat.max() 
+        W_feat = W_feat.cpu().numpy()
+
+        def get_diagonal (W):
+            D = row_sum(W)
+            D[D < 1e-12] = 1.0  # Prevent division by zero.
+            D = diags(D)
+            return D
+        
+        D = np.array(get_diagonal(W_feat).todense())
+
+        L = D - W_feat
+        eigenvalues, eigenvectors = eigsh(L, k = 5, which = 'LM', sigma = 0)
         eigenvalues, eigenvectors = torch.from_numpy(eigenvalues), torch.from_numpy(eigenvectors.T).float()
+
+        # temp = np.matmul(temp, np.transpose(temp))
+
+        # W = np.where(temp > 0, temp, 0)
+
+        # D = np.zeros(W.shape)
+        # for i in range(W.shape[0]):
+        #     D[i, i] = np.sum(W[i])
+
+        # L = D - W
+        # eigenvalues, eigenvectors = eigsh(L, k = 5, sigma = 0, which = 'LM')
+        # eigenvalues, eigenvectors = torch.from_numpy(eigenvalues), torch.from_numpy(eigenvectors.T).float()
 
 
         if sign_method == 'max':

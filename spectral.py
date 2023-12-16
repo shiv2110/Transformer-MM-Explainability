@@ -162,7 +162,7 @@ def their_stuff():
         # giraffe
         "is the animal eating?",
         # baseball
-        "did this man catch the ball?",
+        "What is the colour of the man's shirt?",
         # bath
         "is the tub white ?",
         # frisbee
@@ -170,10 +170,10 @@ def their_stuff():
         ################## paper samples
     ]
 
-    URL = 'lxmert/lxmert/experiments/paper/{0}/{0}.jpg'.format(image_ids[0])
+    URL = 'lxmert/lxmert/experiments/paper/{0}/{0}.jpg'.format(image_ids[1])
 
-    R_t_t, R_t_i = lrp.generate_ours((URL, test_questions_for_images[0]),
-                                     use_lrp=False, normalize_self_attention=True, method_name="ours", device=DEVICE)
+    R_t_t, R_t_i = lrp.generate_ours((URL, test_questions_for_images[1]),
+                                     use_lrp=False, normalize_self_attention=True, method_name="ours")
 
     image_scores = R_t_i[0]
     text_scores = R_t_t[0]
@@ -228,7 +228,7 @@ def spectral_stuff():
         # giraffe
         "is the animal eating?",
         # baseball
-        "did this man catch the ball?",
+        "Did he wear a cap?",
         # bath
         "is the tub white ?",
         # frisbee
@@ -256,7 +256,7 @@ def spectral_stuff():
     # result, indices = torch.sort(eig_vals)
 
     # URL = 'lxmert/lxmert/experiments/paper/{0}/{0}.jpg'.format(image_ids[0])
-    image_scores = R_t_i
+    image_scores = R_t_i 
     test_save_image_vis(model_lrp, URL, image_scores)
 
 
