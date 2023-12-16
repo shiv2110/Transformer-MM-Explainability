@@ -228,17 +228,17 @@ def spectral_stuff():
         # giraffe
         "is the animal eating?",
         # baseball
-        "Did he wear a cap?",
+        "did he catch the ball?",
         # bath
         "is the tub white ?",
         # frisbee
         "did the man just catch the frisbee?"
         ################## paper samples
     ]
-    URL = 'lxmert/lxmert/experiments/paper/{0}/{0}.jpg'.format(image_ids[0])
+    URL = 'lxmert/lxmert/experiments/paper/{0}/{0}.jpg'.format(image_ids[1])
     # URL = 'giraffe.jpg'
 
-    R_t_t, R_t_i = lrp.generate_ours_dsm((URL, test_questions_for_images[0]), sign_method="mean", use_lrp=False, 
+    R_t_t, R_t_i = lrp.generate_ours_dsm((URL, test_questions_for_images[1]), sign_method="mean", use_lrp=False, 
                                          normalize_self_attention=True, method_name="dsm")
     text_scores = R_t_t
 
@@ -256,7 +256,7 @@ def spectral_stuff():
     # result, indices = torch.sort(eig_vals)
 
     # URL = 'lxmert/lxmert/experiments/paper/{0}/{0}.jpg'.format(image_ids[0])
-    image_scores = R_t_i 
+    image_scores = R_t_i[1] * -1
     test_save_image_vis(model_lrp, URL, image_scores)
 
 

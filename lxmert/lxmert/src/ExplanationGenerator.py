@@ -394,7 +394,7 @@ class GeneratorOurs:
                 if 0.5 < torch.mean((eigenvectors[k] > 0).float()).item() < 1.:  # reverse segment
                     eigenvectors[k] = 0 - eigenvectors[k]
 
-        return eigenvectors, eigenvectors
+        return eigenvectors[1], eigenvectors[1]
 
 
 
