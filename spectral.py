@@ -31,6 +31,7 @@ ATTR_URL = "https://raw.githubusercontent.com/airsplay/py-bottom-up-attention/ma
 VQA_URL = "https://raw.githubusercontent.com/airsplay/lxmert/master/data/vqa/trainval_label2ans.json"
 
 
+
 class ModelUsage:
     def __init__(self, use_lrp=False):
         self.vqa_answers = utils.get_data(VQA_URL)
@@ -125,7 +126,7 @@ def test_save_image_vis(model_lrp, image_file_path, bbox_scores):
         img = cv2.imread(image_file_path)
         [x, y, w, h] = model_lrp.bboxes[0][index]
         cv2.rectangle(img, (int(x), int(y)), (int(w), int(h)), (0, 0, 255), 2)
-        cv2.imwrite('{}.jpg'.format(index), img)
+        cv2.imwrite('saved_images/{}.jpg'.format(index), img)
 
     count = 1
     plt.figure(figsize=(15, 10))
@@ -135,7 +136,7 @@ def test_save_image_vis(model_lrp, image_file_path, bbox_scores):
       plt.subplot(1, len(top_bboxes_indices), count)
       plt.title(str(idx))
       plt.axis('off')
-      plt.imshow(cv2.imread('{}.jpg'.format(idx)))
+      plt.imshow(cv2.imread('saved_images/{}.jpg'.format(idx)))
       count += 1
 
 
@@ -235,28 +236,14 @@ def spectral_stuff():
         "did the man just catch the frisbee?"
         ################## paper samples
     ]
-    URL = 'lxmert/lxmert/experiments/paper/{0}/{0}.jpg'.format(image_ids[1])
+    URL = 'lxmert/lxmert/experiments/paper/{0}/{0}.jpg'.format(image_ids[3])
     # URL = 'giraffe.jpg'
 
-    R_t_t, R_t_i = lrp.generate_ours_dsm((URL, test_questions_for_images[1]), sign_method="mean", use_lrp=False, 
+    R_t_t, R_t_i = lrp.generate_ours_dsm((URL, test_questions_for_images[3]), sign_method="mean", use_lrp=False, 
                                          normalize_self_attention=True, method_name="dsm")
     text_scores = R_t_t
-
-    # final_attn_map = lrp.attn_t_i[-1].cpu()
-    # W = torch.cat( (final_attn_map, torch.zeros( final_attn_map.shape[1] - final_attn_map.shape[0],
-    #                                              final_attn_map.shape[1])), dim=0)
-    # W = torch.where( W > 5e-5, 1, 0 )
-    # D = torch.zeros(W.shape[0], W.shape[1])
-    # for i in range(D.shape[0]):
-    #     D[i, i] = torch.sum(D[i])
-    # L = D - W
-    # eig_vals, eig_vecs = torch.linalg.eig(L)
-    # eig_vals = eig_vals.real
-    # eig_vecs = eig_vecs.real
-    # result, indices = torch.sort(eig_vals)
-
-    # URL = 'lxmert/lxmert/experiments/paper/{0}/{0}.jpg'.format(image_ids[0])
-    image_scores = R_t_i[1] * -1
+    image_scores = R_t_i
+    # print(image_scores.topk(k = 5).indices)
     test_save_image_vis(model_lrp, URL, image_scores)
 
 
@@ -277,9 +264,85 @@ def spectral_stuff():
     vis_data_records = [visualization.VisualizationDataRecord(text_scores,0,0,0,0,0,model_lrp.question_tokens,1)]
     visualization.visualize_text(vis_data_records)
     print("ANSWER:", vqa_answers[model_lrp.output.question_answering_score.argmax()])
+    
 
+    plt.show()
+
+
+# def lrp_partial ():
+#     model_lrp = ModelUsage(use_lrp=True)
+#     lrp = GeneratorOurs(model_lrp)
+#     baselines = GeneratorBaselines(model_lrp)
+#     vqa_answers = utils.get_data(VQA_URL)
+
+#     # baselines.generate_transformer_attr(None)
+#     # baselines.generate_attn_gradcam(None)
+#     # baselines.generate_partial_lrp(None)
+#     # baselines.generate_raw_attn(None)
+#     # baselines.generate_rollout(None)
+
+#     image_ids = [
+#         # giraffe
+#         'COCO_val2014_000000185590',
+#         # baseball
+#         'COCO_val2014_000000127510',
+#         # bath
+#         'COCO_val2014_000000324266',
+#         # frisbee
+#         'COCO_val2014_000000200717'
+#     ]
+
+#     test_questions_for_images = [
+#         ################## paper samples
+#         # giraffe
+#         "is the animal eating?",
+#         # baseball
+#         "did he catch the ball?",
+#         # bath
+#         "is the tub white ?",
+#         # frisbee
+#         "did the man just catch the frisbee?"
+#         ################## paper samples
+#     ]
+#     URL = 'lxmert/lxmert/experiments/paper/{0}/{0}.jpg'.format(image_ids[2])
+#     # URL = 'giraffe.jpg'
+
+#     R_t_t, R_t_i = baselines.generate_partial_lrp((URL, test_questions_for_images[2]), method_name="partial_lrp")
+
+#     text_scores = R_t_t[0]
+#     image_scores = R_t_i[0]
+#     test_save_image_vis(model_lrp, URL, image_scores)
+
+
+#     save_image_vis(model_lrp, URL, image_scores)
+#     orig_image = Image.open(model_lrp.image_file_path)
+
+#     fig, axs = plt.subplots(ncols=2, figsize=(20, 5))
+#     axs[0].imshow(orig_image)
+#     axs[0].axis('off')
+#     axs[0].set_title('original')
+
+#     masked_image = Image.open('lxmert/lxmert/experiments/paper/new.jpg')
+#     axs[1].imshow(masked_image)
+#     axs[1].axis('off')
+#     axs[1].set_title('masked')
+
+#     text_scores = (text_scores - text_scores.min()) / (text_scores.max() - text_scores.min())
+#     vis_data_records = [visualization.VisualizationDataRecord(text_scores,0,0,0,0,0,model_lrp.question_tokens,1)]
+#     visualization.visualize_text(vis_data_records)
+#     print("ANSWER:", vqa_answers[model_lrp.output.question_answering_score.argmax()])
+
+
+#     plt.show()
 
 if __name__ == '__main__':
     # main()
     # their_stuff()
+    import os
+    import glob
+
+    files = glob.glob('saved_images/*')
+    for f in files:
+        os.remove(f)
     spectral_stuff()
+    # lrp_partial()

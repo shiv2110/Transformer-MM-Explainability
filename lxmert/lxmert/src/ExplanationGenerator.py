@@ -5,6 +5,10 @@ from scipy.sparse.linalg import eigsh
 import torch.nn.functional as F
 from pymatting.util.util import row_sum
 from scipy.sparse import diags
+from scipy.stats import skew
+
+# from sentence_transformers import SentenceTransformer
+# from torch.nn import CosineSimilarity as CosSim
 
 def compute_rollout_attention(all_layer_matrices, start_layer=0):
     # adding residual consideration
@@ -330,8 +334,8 @@ class GeneratorOurs:
         # self.cross_attn_viz_feat = []
         # self.cross_attn_lg_feat = []
         # self.attn_viz_feats = []
-        self.cross_attn_viz_feat_list = []
-        self.cross_attn_lg_feat_list = []
+        # self.cross_attn_viz_feat_list = []
+        # self.cross_attn_lg_feat_list = []
 
 
         # print(len(self.cross_attn_viz_feat))
@@ -340,61 +344,67 @@ class GeneratorOurs:
         model = self.model_usage.model
 
         model.zero_grad()
-        blocks = model.lxmert.encoder.x_layers
-        self.cross_attn_viz_feat_list = model.lxmert.encoder.visual_feats_list_x
-        self.cross_attn_lg_feat_list = model.lxmert.encoder.lang_feats_list_x
+        # blocks = model.lxmert.encoder.x_layers
+        # self.cross_attn_viz_feat_list = model.lxmert.encoder.visual_feats_list_x
+        # self.cross_attn_lg_feat_list = model.lxmert.encoder.lang_feats_list_x
 
+        # text_prior = input[1]
+        # text_prior = model.lxmert.encoder.lang_feats_list_x[-2].squeeze().cpu()[0] #CLS token feature vector
 
-        feats = self.cross_attn_viz_feat_list[-2].squeeze().cpu()
-        # temp = self.cross_attn_viz_feat_list[-2].squeeze().cpu()
+        skew_vec = []
+        for feats in model.lxmert.encoder.visual_feats_list_x[-2: -1]:
+            # sbert_model = SentenceTransformer('bert-base-nli-mean-tokens')
+            # query_vec = sbert_model.encode([text_prior])[0]
 
+            # feats = F.normalize(feats, p = 2, dim = -1)
+            feats = feats.squeeze().cpu()
 
-        # feats = F.normalize(feats, p = 2, dim = -1)
+            W_feat = (feats @ feats.T)
+            W_feat = (W_feat * (W_feat > 0))
+            W_feat = W_feat / W_feat.max() 
+            # print(torch.diagonal(W_feat, 0))
 
-        W_feat = (feats @ feats.T)
+            W_feat = W_feat.cpu().numpy()
 
-        W_feat = (W_feat * (W_feat > 0))
-        W_feat = W_feat / W_feat.max() 
-        W_feat = W_feat.cpu().numpy()
+            for obj_feat in W_feat:
+                skew_vec.append(skew(obj_feat))
+            
+            skew_vec = np.array(skew_vec)
+            # print(f"Arg Max: {np.argmax(skew_vec)}")
 
-        def get_diagonal (W):
-            D = row_sum(W)
-            D[D < 1e-12] = 1.0  # Prevent division by zero.
-            D = diags(D)
-            return D
-        
-        D = np.array(get_diagonal(W_feat).todense())
+            def get_diagonal (W):
+                D = row_sum(W)
+                D[D < 1e-12] = 1.0  # Prevent division by zero.
+                D = diags(D)
+                return D
+            
+            D = np.array(get_diagonal(W_feat).todense())
+            # print(D.diagonal())
 
-        L = D - W_feat
-        eigenvalues, eigenvectors = eigsh(L, k = 5, which = 'LM', sigma = 0)
-        eigenvalues, eigenvectors = torch.from_numpy(eigenvalues), torch.from_numpy(eigenvectors.T).float()
+            L = D - W_feat
+            eigenvalues, eigenvectors = eigsh(L, k = 5, which = 'LM', sigma = 0)
+            eigenvalues, eigenvectors = torch.from_numpy(eigenvalues), torch.from_numpy(eigenvectors.T).float()
 
-        # temp = np.matmul(temp, np.transpose(temp))
+            # if sign_method == 'max':
+            #     # abs max should always be positive
+            #     for k in range(eigenvectors.shape[0]):
+            #         if abs(eigenvectors[k]).max().item() != eigenvectors[k].max().item():
+            #             eigenvectors[k] = 0 - eigenvectors[k]
 
-        # W = np.where(temp > 0, temp, 0)
+            # elif sign_method == 'mean':
+            #     # ve+ values mean between 0.5 and 1.0
+            #     for k in range(eigenvectors.shape[0]):
+            #         if 0.5 < torch.mean((eigenvectors[k] > 0).float()).item() < 1.:  # reverse segment
+            #             eigenvectors[k] = 0 - eigenvectors[k]
 
-        # D = np.zeros(W.shape)
-        # for i in range(W.shape[0]):
-        #     D[i, i] = np.sum(W[i])
+            fev, nfev = eigenvectors[1], (eigenvectors[1] * -1)
+            k1, k2 = fev.topk(k = 1).indices[0], nfev.topk(k = 1).indices[0]
 
-        # L = D - W
-        # eigenvalues, eigenvectors = eigsh(L, k = 5, sigma = 0, which = 'LM')
-        # eigenvalues, eigenvectors = torch.from_numpy(eigenvalues), torch.from_numpy(eigenvectors.T).float()
-
-
-        if sign_method == 'max':
-            # abs max should always be positive
-            for k in range(eigenvectors.shape[0]):
-                if abs(eigenvectors[k]).max().item() != eigenvectors[k].max().item():
-                    eigenvectors[k] = 0 - eigenvectors[k]
-
-        elif sign_method == 'mean':
-            # ve+ values mean between 0.5 and 1.0
-            for k in range(eigenvectors.shape[0]):
-                if 0.5 < torch.mean((eigenvectors[k] > 0).float()).item() < 1.:  # reverse segment
-                    eigenvectors[k] = 0 - eigenvectors[k]
-
-        return eigenvectors[1], eigenvectors[1]
+            if skew_vec[k1] > skew_vec[k2]:
+                return fev, fev
+            else:
+                return nfev, nfev
+        # return eigenvectors[1], eigenvectors[1]
 
 
 
