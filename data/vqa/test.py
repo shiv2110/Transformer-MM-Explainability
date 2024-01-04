@@ -15,8 +15,8 @@ data = json.load(f)
 
 ## resuable stuff
 n = int(sys.argv[1])
-base_path = '../../../../data/val2014/val2014'
-dest_path = '../../../../data/val2014/sample_val2014'
+base_path = '../../../../data/root/val2014'
+dest_path = '../../../../data/sample_val2014'
 
 ## delete existing files in the destination
 existing_files = os.listdir(dest_path)
