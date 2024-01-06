@@ -822,10 +822,10 @@ class LxmertEncoder(nn.Module):
         self.x_layers = nn.ModuleList([LxmertXLayer(config) for _ in range(self.num_x_layers)])
         self.r_layers = nn.ModuleList([LxmertLayer(config) for _ in range(self.num_r_layers)])
 
-        self.visual_feats_list_r = []
-        self.visual_feats_list_x = []
-        self.lang_feats_list_x = []
-        self.lang_feats_list_r = []
+        # self.visual_feats_list_r = []
+        # self.visual_feats_list_x = []
+        # self.lang_feats_list_x = []
+        # self.lang_feats_list_r = []
 
 
     def forward(
@@ -837,6 +837,11 @@ class LxmertEncoder(nn.Module):
             visual_attention_mask=None,
             output_attentions=None,
     ):
+        
+        # self.visual_feats_list_r = []
+        self.visual_feats_list_x = []
+        self.lang_feats_list_x = []
+        # self.lang_feats_list_r = []
 
         vision_hidden_states = ()
         language_hidden_states = ()
@@ -859,7 +864,7 @@ class LxmertEncoder(nn.Module):
             v_outputs = layer_module(visual_feats, visual_attention_mask, output_attentions=output_attentions)
             visual_feats = v_outputs[0]
 
-            self.visual_feats_list_r.append(visual_feats.detach().clone())
+            # self.visual_feats_list_r.append(visual_feats.detach().clone())
 
             vision_hidden_states = vision_hidden_states + (visual_feats,)
             if vision_attentions is not None:

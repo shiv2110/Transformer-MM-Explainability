@@ -251,7 +251,8 @@ class GeneratorOurs:
         one_hot[0, index] = 1
         one_hot_vector = one_hot
         one_hot = torch.from_numpy(one_hot).requires_grad_(True)
-        one_hot = torch.sum(one_hot.cuda() * output)
+        one_hot = torch.sum(one_hot * output)
+        # one_hot = torch.sum(one_hot.cuda() * output)
 
         model.zero_grad()
         one_hot.backward(retain_graph=True)
@@ -350,61 +351,70 @@ class GeneratorOurs:
 
         # text_prior = input[1]
         # text_prior = model.lxmert.encoder.lang_feats_list_x[-2].squeeze().cpu()[0] #CLS token feature vector
-
+        
+        # print(f"n-layers: {len(model.lxmert.encoder.visual_feats_list_x)}")
         skew_vec = []
-        for feats in model.lxmert.encoder.visual_feats_list_x[-2: -1]:
-            # sbert_model = SentenceTransformer('bert-base-nli-mean-tokens')
-            # query_vec = sbert_model.encode([text_prior])[0]
+        feats = model.lxmert.encoder.visual_feats_list_x[-2].detach().clone()
+        # for feats in model.lxmert.encoder.visual_feats_list_x[-2: -1]:
 
             # feats = F.normalize(feats, p = 2, dim = -1)
-            feats = feats.squeeze().cpu()
+        feats = feats.squeeze().cpu()
+        # print(f"Feats 0,0 : {feats[1][:10]}")
 
-            W_feat = (feats @ feats.T)
-            W_feat = (W_feat * (W_feat > 0))
-            W_feat = W_feat / W_feat.max() 
-            # print(torch.diagonal(W_feat, 0))
 
-            W_feat = W_feat.cpu().numpy()
+        W_feat = (feats @ feats.T)
+        W_feat = (W_feat * (W_feat > 0))
+        W_feat = W_feat / W_feat.max() 
+        # print(torch.diagonal(W_feat, 0))
 
-            for obj_feat in W_feat:
-                skew_vec.append(skew(obj_feat))
-            
-            skew_vec = np.array(skew_vec)
-            # print(f"Arg Max: {np.argmax(skew_vec)}")
+        W_feat = W_feat.cpu().numpy()
 
-            def get_diagonal (W):
-                D = row_sum(W)
-                D[D < 1e-12] = 1.0  # Prevent division by zero.
-                D = diags(D)
-                return D
-            
-            D = np.array(get_diagonal(W_feat).todense())
-            # print(D.diagonal())
+        for obj_feat in W_feat:
+            skew_vec.append(skew(obj_feat))
+        
+        skew_vec = np.array(skew_vec)
 
-            L = D - W_feat
-            eigenvalues, eigenvectors = eigsh(L, k = 5, which = 'LM', sigma = 0)
-            eigenvalues, eigenvectors = torch.from_numpy(eigenvalues), torch.from_numpy(eigenvectors.T).float()
+        def get_diagonal (W):
+            D = row_sum(W)
+            D[D < 1e-12] = 1.0  # Prevent division by zero.
+            D = diags(D)
+            return D
+        
+        D = np.array(get_diagonal(W_feat).todense())
 
-            # if sign_method == 'max':
-            #     # abs max should always be positive
-            #     for k in range(eigenvectors.shape[0]):
-            #         if abs(eigenvectors[k]).max().item() != eigenvectors[k].max().item():
-            #             eigenvectors[k] = 0 - eigenvectors[k]
+        L = D - W_feat
+        # print(f"L: {L[0]}")
+        try:
+            eigenvalues, eigenvectors = eigsh(L, k = 5, which = 'LM', sigma = 0, M = D)
+        except:
+            # eigenvalues, eigenvectors = eigsh(L, k = 5, which = 'LM', sigma = 0)
+            eigenvalues, eigenvectors = eigsh(L, k = 5, which = 'SM', M = D)
 
-            # elif sign_method == 'mean':
-            #     # ve+ values mean between 0.5 and 1.0
-            #     for k in range(eigenvectors.shape[0]):
-            #         if 0.5 < torch.mean((eigenvectors[k] > 0).float()).item() < 1.:  # reverse segment
-            #             eigenvectors[k] = 0 - eigenvectors[k]
 
-            fev, nfev = eigenvectors[1], (eigenvectors[1] * -1)
-            k1, k2 = fev.topk(k = 1).indices[0], nfev.topk(k = 1).indices[0]
+        eigenvalues, eigenvectors = torch.from_numpy(eigenvalues), torch.from_numpy(eigenvectors.T).float()
 
-            if skew_vec[k1] > skew_vec[k2]:
-                return fev, fev
-            else:
-                return nfev, nfev
-        # return eigenvectors[1], eigenvectors[1]
+        # if sign_method == 'max':
+        #     # abs max should always be positive
+        #     for k in range(eigenvectors.shape[0]):
+        #         if abs(eigenvectors[k]).max().item() != eigenvectors[k].max().item():
+        #             eigenvectors[k] = 0 - eigenvectors[k]
+
+        # elif sign_method == 'mean':
+        #     # ve+ values mean between 0.5 and 1.0
+        #     for k in range(eigenvectors.shape[0]):
+        #         if 0.5 < torch.mean((eigenvectors[k] > 0).float()).item() < 1.:  # reverse segment
+        #             eigenvectors[k] = 0 - eigenvectors[k]
+
+        fev, nfev = eigenvectors[1], (eigenvectors[1] * -1)
+        k1, k2 = fev.topk(k = 1).indices[0], nfev.topk(k = 1).indices[0]
+
+        # print(eigenvalues)
+
+        if skew_vec[k1] > skew_vec[k2]:
+            return fev, fev
+        else:
+            return nfev, nfev
+    # return eigenvectors[1], eigenvectors[1]
 
 
 
@@ -592,7 +602,8 @@ class GeneratorBaselines:
         one_hot[0, index] = 1
         one_hot_vector = one_hot
         one_hot = torch.from_numpy(one_hot).requires_grad_(True)
-        one_hot = torch.sum(one_hot.cuda() * output)
+        # one_hot = torch.sum(one_hot.cuda() * output)
+        one_hot = torch.sum(one_hot * output)
 
         model.zero_grad()
         one_hot.backward(retain_graph=True)
