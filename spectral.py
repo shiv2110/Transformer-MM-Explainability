@@ -1,3 +1,4 @@
+#%%
 from lxmert.lxmert.src.modeling_frcnn import GeneralizedRCNN
 import lxmert.lxmert.src.vqa_utils as utils
 from lxmert.lxmert.src.processing_image import Preprocess
@@ -21,7 +22,6 @@ import requests
 import os
 import glob
 import sys
-
 
 DEVICE = "cpu"
 
@@ -159,84 +159,6 @@ def their_stuff():
 
         'COCO_val2014_000000159282',
 
-        'COCO_val2014_000000134886'
-    ]
-
-    test_questions_for_images = [
-        ################## paper samples
-        # giraffe
-        "is the animal eating?",
-        # baseball
-        "did he catch the ball?",
-        # bath
-        "is the tub white ?",
-        # frisbee
-        "did the man just catch the frisbee?",
-
-        # "What kind of flowers are those?"
-        "What is at the bottom of the vase?",
-
-        "How many planes are in the air?"
-        ################## paper samples
-    ]
-
-    # URL = 'lxmert/lxmert/experiments/paper/{0}/{0}.jpg'.format(image_ids[5])
-    URL = '../../data/root/val2014/{}.jpg'.format(image_ids[5])
-
-    R_t_t, R_t_i = lrp.generate_ours((URL, test_questions_for_images[5]),
-                                     use_lrp=False, normalize_self_attention=True, method_name="ours")
-
-    image_scores = R_t_i[0]
-    text_scores = R_t_t[0]
-
-    test_save_image_vis(model_lrp, URL, image_scores)
-
-    save_image_vis(model_lrp, URL, image_scores)
-    orig_image = Image.open(model_lrp.image_file_path)
-
-    fig, axs = plt.subplots(ncols=2, figsize=(20, 5))
-    axs[0].imshow(orig_image);
-    axs[0].axis('off');
-    axs[0].set_title('original');
-
-    masked_image = Image.open('lxmert/lxmert/experiments/paper/new.jpg')
-    axs[1].imshow(masked_image);
-    axs[1].axis('off');
-    axs[1].set_title('masked');
-
-    text_scores = (text_scores - text_scores.min()) / (text_scores.max() - text_scores.min())
-    vis_data_records = [visualization.VisualizationDataRecord(text_scores,0,0,0,0,0,model_lrp.question_tokens,1)]
-    visualization.visualize_text(vis_data_records)
-    print("ANSWER:", vqa_answers[model_lrp.output.question_answering_score.argmax()])
-
-    plt.show()
-
-
-
-def spectral_stuff():
-    model_lrp = ModelUsage(use_lrp=True)
-    lrp = GeneratorOurs(model_lrp)
-    # baselines = GeneratorBaselines(model_lrp)
-    vqa_answers = utils.get_data(VQA_URL)
-
-    # baselines.generate_transformer_attr(None)
-    # baselines.generate_attn_gradcam(None)
-    # baselines.generate_partial_lrp(None)
-    # baselines.generate_raw_attn(None)
-    # baselines.generate_rollout(None)
-
-    image_ids = [
-        # giraffe
-        'COCO_val2014_000000185590',
-        # baseball
-        'COCO_val2014_000000127510',
-        # bath
-        'COCO_val2014_000000324266',
-        # frisbee
-        'COCO_val2014_000000200717',
-
-        'COCO_val2014_000000159282',
-
         'COCO_val2014_000000134886',
 
         'COCO_val2014_000000456784', 
@@ -271,22 +193,21 @@ def spectral_stuff():
         ################## paper samples
     ]
 
-    # URL = 'lxmert/lxmert/experiments/paper/{0}/{0}.jpg'.format(image_ids[4])
-    URL = '../../data/root/val2014/{}.jpg'.format(image_ids[8])
-    # URL = 'giraffe.jpg'
+    # URL = 'lxmert/lxmert/experiments/paper/{0}/{0}.jpg'.format(image_ids[5])
+    URL = '../../data/root/val2014/{}.jpg'.format(image_ids[2])
 
-    R_t_t, R_t_i = lrp.generate_ours_dsm((URL, test_questions_for_images[8]), sign_method="mean", use_lrp=False, 
-                                         normalize_self_attention=True, method_name="dsm")
-    text_scores = R_t_t
-    image_scores = R_t_i 
-    # print(image_scores.topk(k = 5).indices)
+    R_t_t, R_t_i = lrp.generate_ours((URL, test_questions_for_images[2]),
+                                     use_lrp=False, normalize_self_attention=True, method_name="ours")
+
+    image_scores = R_t_i[0]
+    text_scores = R_t_t[0]
+
     test_save_image_vis(model_lrp, URL, image_scores)
-
 
     save_image_vis(model_lrp, URL, image_scores)
     orig_image = Image.open(model_lrp.image_file_path)
 
-    fig, axs = plt.subplots(ncols=2, figsize=(20, 5))
+    fig, axs = plt.subplots(ncols=3, figsize=(20, 5))
     axs[0].imshow(orig_image)
     axs[0].axis('off')
     axs[0].set_title('original')
@@ -296,9 +217,157 @@ def spectral_stuff():
     axs[1].axis('off')
     axs[1].set_title('masked')
 
+    axs[2].imshow(R_t_i.numpy())
+    # axs[2].axis('off')
+    axs[2].set_xlabel("object number")
+    axs[2].set_ylabel("language token number")
+    axs[2].set_title('R_t_i Map')
+
     text_scores = (text_scores - text_scores.min()) / (text_scores.max() - text_scores.min())
     vis_data_records = [visualization.VisualizationDataRecord(text_scores,0,0,0,0,0,model_lrp.question_tokens,1)]
     visualization.visualize_text(vis_data_records)
+    print("ANSWER:", vqa_answers[model_lrp.output.question_answering_score.argmax()])
+    # plt.imshow(image_scores.unsqueeze(dim = 0).numpy())
+    # plt.imshow(R_t_i.numpy())
+    plt.show()
+
+
+
+def spectral_stuff():
+    model_lrp = ModelUsage(use_lrp=True)
+    lrp = GeneratorOurs(model_lrp)
+    # baselines = GeneratorBaselines(model_lrp)
+    vqa_answers = utils.get_data(VQA_URL)
+
+    # baselines.generate_transformer_attr(None)
+    # baselines.generate_attn_gradcam(None)
+    # baselines.generate_partial_lrp(None)
+    # baselines.generate_raw_attn(None)
+    # baselines.generate_rollout(None)
+
+    image_ids = [
+        # giraffe
+        'COCO_val2014_000000185590',
+        # baseball
+        'COCO_val2014_000000127510',
+        # bath
+        'COCO_val2014_000000324266',
+        # frisbee
+        'COCO_val2014_000000200717',
+
+        'COCO_val2014_000000159282',
+
+        'COCO_val2014_000000134886',
+
+        'COCO_val2014_000000456784', 
+
+        'COCO_val2014_000000085101',
+
+        'COCO_val2014_000000254834',
+
+        'COCO_val2014_000000297681',
+
+        'COCO_val2014_000000193112',
+
+        'COCO_val2014_000000312081',
+
+        'COCO_val2014_000000472530',
+
+        'COCO_val2014_000000532164',
+
+        'COCO_val2014_000000009466',
+
+        'COCO_val2014_000000435187',
+
+        'COCO_val2014_000000353405',
+
+        'COCO_val2014_000000516414',
+
+        'COCO_val2014_000000097693',
+
+        'COCO_val2014_000000014450'
+    ]
+
+    test_questions_for_images = [
+        ################## paper samples
+        # giraffe
+        "is the animal eating?",
+        # baseball
+        "did he catch the ball?",
+        # bath
+        "is the tub white ?",
+        # frisbee
+        "did the man just catch the frisbee?",
+
+        # "What kind of flowers are those?"
+        "What is at the bottom of the vase?",
+
+        "How many planes are in the air?",
+
+        "What kind of cake is that?",
+
+        "Are there clouds in the picture?",
+
+        "What is reflecting in the building's windows?",
+
+        "Why are the lights reflecting?",
+
+        " What is the person riding?", # failure
+ 
+        "How many kids have their hands up in the air?", # both weird
+        ################## paper samples
+
+        "Is there a microwave in the room?",
+
+        "Which of the people is wearing a hat that would be appropriate for St. Patrick's Day?",
+
+        "How many shoes do you see?",
+
+        "What surrounds the vehicle?",
+
+        "How many clocks?",
+
+        "Are these yachts?",
+
+        "What color are blankets on this bed?",
+
+        "Is this a railroad track?"
+    ]
+
+    # URL = 'lxmert/lxmert/experiments/paper/{0}/{0}.jpg'.format(image_ids[4])
+    URL = '../../data/root/val2014/{}.jpg'.format(image_ids[-2])
+    # URL = 'giraffe.jpg'
+    qs = test_questions_for_images[-2]
+    R_t_t, R_t_i = lrp.generate_ours_dsm((URL, qs), sign_method="mean", use_lrp=False, 
+                                         normalize_self_attention=True, method_name="dsm")
+    text_scores = R_t_t
+    image_scores = R_t_i * -1
+    # print(image_scores.topk(k = 5).indices)
+    test_save_image_vis(model_lrp, URL, image_scores)
+
+
+    save_image_vis(model_lrp, URL, image_scores)
+    orig_image = Image.open(model_lrp.image_file_path)
+
+    fig, axs = plt.subplots(ncols=3, figsize=(20, 5))
+    axs[0].imshow(orig_image)
+    axs[0].axis('off')
+    axs[0].set_title('original')
+
+    masked_image = Image.open('lxmert/lxmert/experiments/paper/new.jpg')
+    axs[1].imshow(masked_image)
+    axs[1].axis('off')
+    axs[1].set_title('masked')
+
+    axs[2].imshow(R_t_i.unsqueeze(dim = 0).numpy())
+    axs[2].set_xlabel("object number")
+    # axs[2].set_ylabel("language token number")
+    axs[2].set_title('object relevance')
+
+    # text_scores = (text_scores - text_scores.min()) / (text_scores.max() - text_scores.min())
+    # vis_data_records = [visualization.VisualizationDataRecord(text_scores,0,0,0,0,0,model_lrp.question_tokens,1)]
+    # visualization.visualize_text(vis_data_records)
+    print(f"QUESTION: {qs}")
     print("ANSWER:", vqa_answers[model_lrp.output.question_answering_score.argmax()])
     
 
@@ -392,3 +461,6 @@ if __name__ == '__main__':
     # their_stuff()
     spectral_stuff()
     # transformer_attn()
+
+
+# %%

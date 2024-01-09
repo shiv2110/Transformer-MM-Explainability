@@ -365,7 +365,6 @@ class GeneratorOurs:
         W_feat = (feats @ feats.T)
         W_feat = (W_feat * (W_feat > 0))
         W_feat = W_feat / W_feat.max() 
-        # print(torch.diagonal(W_feat, 0))
 
         W_feat = W_feat.cpu().numpy()
 
@@ -383,14 +382,14 @@ class GeneratorOurs:
         D = np.array(get_diagonal(W_feat).todense())
 
         L = D - W_feat
-        # print(f"L: {L[0]}")
+
         try:
             eigenvalues, eigenvectors = eigsh(L, k = 5, which = 'LM', sigma = 0, M = D)
         except:
             # eigenvalues, eigenvectors = eigsh(L, k = 5, which = 'LM', sigma = 0)
             eigenvalues, eigenvectors = eigsh(L, k = 5, which = 'SM', M = D)
-
-
+        # eigenvalues, eigenvectors = eigsh(L, k = 5, which = 'LM', sigma = 0)
+    
         eigenvalues, eigenvectors = torch.from_numpy(eigenvalues), torch.from_numpy(eigenvectors.T).float()
 
         # if sign_method == 'max':
@@ -408,9 +407,12 @@ class GeneratorOurs:
         fev, nfev = eigenvectors[1], (eigenvectors[1] * -1)
         k1, k2 = fev.topk(k = 1).indices[0], nfev.topk(k = 1).indices[0]
 
-        # print(eigenvalues)
-
-        if skew_vec[k1] > skew_vec[k2]:
+        # print(skew_vec)
+        if skew_vec[k1] <= 0 and skew_vec[k2] > 0:
+            return fev, fev
+        elif skew_vec[k1] > 0 and skew_vec[k2] <= 0:
+            return nfev, nfev
+        elif skew_vec[k1] > skew_vec[k2]:
             return fev, fev
         else:
             return nfev, nfev

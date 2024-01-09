@@ -124,7 +124,7 @@ def test_save_image_vis(model_lrp, image_file_path, bbox_scores, ap_type):
     for index in top_bboxes_indices:
         img = cv2.imread(image_file_path)
         [x, y, w, h] = model_lrp.bboxes[0][index]
-        cv2.rectangle(img, (int(x), int(y)), (int(w), int(h)), (0, 0, 255), 2)
+        cv2.rectangle(img, (int(x), int(y)), (int(w), int(h)), (0, 255, 0), 10)
         cv2.imwrite('saved_images/{}.jpg'.format(index), img)
 
     count = 1
@@ -133,9 +133,9 @@ def test_save_image_vis(model_lrp, image_file_path, bbox_scores, ap_type):
     for idx in top_bboxes_indices:
       idx = idx.item()
       plt.subplot(1, len(top_bboxes_indices), count)
-      plt.title(ap_type + " - " +str(idx))
+      plt.title(ap_type + " " + str(idx))
       plt.axis('off')
-      plt.imshow(cv2.imread('saved_images/{}.jpg'.format(idx)))
+      plt.imshow(  cv2.cvtColor(cv2.imread('saved_images/{}.jpg'.format(idx)), cv2.COLOR_BGR2RGB)  )
       count += 1
 
 
@@ -199,9 +199,9 @@ def their_stuff(model_lrp, lrp, vqa_answers, img_id, qs):
     axs[1].axis('off');
     axs[1].set_title('HC RM masked');
 
-    text_scores = (text_scores - text_scores.min()) / (text_scores.max() - text_scores.min())
-    vis_data_records = [visualization.VisualizationDataRecord(text_scores,0,0,0,0,0,model_lrp.question_tokens,1)]
-    visualization.visualize_text(vis_data_records)
+    # text_scores = (text_scores - text_scores.min()) / (text_scores.max() - text_scores.min())
+    # vis_data_records = [visualization.VisualizationDataRecord(text_scores,0,0,0,0,0,model_lrp.question_tokens,1)]
+    # visualization.visualize_text(vis_data_records)
 
     print(f"\nQUESTION: {qs}")
     print("ANSWER:", vqa_answers[model_lrp.output.question_answering_score.argmax()])
@@ -262,7 +262,9 @@ def spectral_stuff(model_lrp, lrp, vqa_answers, img_id, qs):
     # print(image_scores)
 
     # print(image_scores.topk(k = 5).indices)
-    test_save_image_vis(model_lrp, URL, image_scores, "spectral")
+    test_save_image_vis(model_lrp, URL, image_scores, "spectral+")
+    test_save_image_vis(model_lrp, URL, image_scores * -1, "spectral-")
+
 
 
     save_image_vis(model_lrp, URL, image_scores)
@@ -278,9 +280,9 @@ def spectral_stuff(model_lrp, lrp, vqa_answers, img_id, qs):
     axs[1].axis('off')
     axs[1].set_title('spectral masked')
 
-    text_scores = (text_scores - text_scores.min()) / (text_scores.max() - text_scores.min())
-    vis_data_records = [visualization.VisualizationDataRecord(text_scores,0,0,0,0,0,model_lrp.question_tokens,1)]
-    visualization.visualize_text(vis_data_records)
+    # text_scores = (text_scores - text_scores.min()) / (text_scores.max() - text_scores.min())
+    # vis_data_records = [visualization.VisualizationDataRecord(text_scores,0,0,0,0,0,model_lrp.question_tokens,1)]
+    # visualization.visualize_text(vis_data_records)
     print(f"\nQUESTION: {qs}")
     print("ANSWER:", vqa_answers[model_lrp.output.question_answering_score.argmax()])
     # print(image_scores)
