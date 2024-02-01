@@ -353,44 +353,72 @@ class GeneratorOurs:
         # text_prior = model.lxmert.encoder.lang_feats_list_x[-2].squeeze().cpu()[0] #CLS token feature vector
         
         # print(f"n-layers: {len(model.lxmert.encoder.visual_feats_list_x)}")
-        skew_vec = []
-        feats = model.lxmert.encoder.visual_feats_list_x[-2].detach().clone()
-        # for feats in model.lxmert.encoder.visual_feats_list_x[-2: -1]:
+        
+        image_feats = model.lxmert.encoder.visual_feats_list_x[-2].detach().clone()
+        text_feats = model.lxmert.encoder.lang_feats_list_x[-2].detach().clone()
+        # print(f"Text feats shape: {text_feats.shape}")
+
 
             # feats = F.normalize(feats, p = 2, dim = -1)
-        feats = feats.squeeze().cpu()
+        image_feats = image_feats.squeeze().cpu()
+        text_feats = text_feats.squeeze().cpu()[1:-1]
+        # print(f"Text feats shape: {text_feats.shape}")
+
+
+
         # print(f"Feats 0,0 : {feats[1][:10]}")
 
 
-        W_feat = (feats @ feats.T)
-        W_feat = (W_feat * (W_feat > 0))
-        W_feat = W_feat / W_feat.max() 
+        def get_eigs (feats):
+            skew_vec = []
+            W_feat = (feats @ feats.T)
+            W_feat = (W_feat * (W_feat > 0))
+            W_feat = W_feat / W_feat.max() 
 
-        W_feat = W_feat.cpu().numpy()
+            W_feat = W_feat.cpu().numpy()
 
-        for obj_feat in W_feat:
-            skew_vec.append(skew(obj_feat))
+            for obj_feat in W_feat:
+                skew_vec.append(skew(obj_feat))
+            
+            skew_vec = np.array(skew_vec)
+
+            def get_diagonal (W):
+                D = row_sum(W)
+                D[D < 1e-12] = 1.0  # Prevent division by zero.
+                D = diags(D)
+                return D
+            
+            D = np.array(get_diagonal(W_feat).todense())
+
+            L = D - W_feat
+
+            try:
+                eigenvalues, eigenvectors = eigsh(L, k = 5, which = 'LM', sigma = 0, M = D)
+            except:
+                # eigenvalues, eigenvectors = eigsh(L, k = 5, which = 'LM', sigma = 0)
+                eigenvalues, eigenvectors = eigsh(L, k = 5, which = 'SM', M = D)
+     
         
-        skew_vec = np.array(skew_vec)
+            eigenvalues, eigenvectors = torch.from_numpy(eigenvalues), torch.from_numpy(eigenvectors.T).float()
 
-        def get_diagonal (W):
-            D = row_sum(W)
-            D[D < 1e-12] = 1.0  # Prevent division by zero.
-            D = diags(D)
-            return D
-        
-        D = np.array(get_diagonal(W_feat).todense())
+            fev, nfev = eigenvectors[1], (eigenvectors[1] * -1)
+            k1, k2 = fev.topk(k = 1).indices[0], nfev.topk(k = 1).indices[0]
 
-        L = D - W_feat
-
-        try:
-            eigenvalues, eigenvectors = eigsh(L, k = 5, which = 'LM', sigma = 0, M = D)
-        except:
-            # eigenvalues, eigenvectors = eigsh(L, k = 5, which = 'LM', sigma = 0)
-            eigenvalues, eigenvectors = eigsh(L, k = 5, which = 'SM', M = D)
-        # eigenvalues, eigenvectors = eigsh(L, k = 5, which = 'LM', sigma = 0)
     
-        eigenvalues, eigenvectors = torch.from_numpy(eigenvalues), torch.from_numpy(eigenvectors.T).float()
+            if skew_vec[k1] <= 0 and skew_vec[k2] > 0:
+                return fev
+            elif skew_vec[k1] > 0 and skew_vec[k2] <= 0:
+                return nfev
+            elif skew_vec[k1] > skew_vec[k2]:
+                return fev
+            else:
+                return nfev
+        
+        image_fev = get_eigs(image_feats)
+        lang_fev = get_eigs(text_feats)
+        # print(lang_fev)
+        return torch.abs(lang_fev), image_fev
+
 
         # if sign_method == 'max':
         #     # abs max should always be positive
@@ -403,19 +431,7 @@ class GeneratorOurs:
         #     for k in range(eigenvectors.shape[0]):
         #         if 0.5 < torch.mean((eigenvectors[k] > 0).float()).item() < 1.:  # reverse segment
         #             eigenvectors[k] = 0 - eigenvectors[k]
-
-        fev, nfev = eigenvectors[1], (eigenvectors[1] * -1)
-        k1, k2 = fev.topk(k = 1).indices[0], nfev.topk(k = 1).indices[0]
-
-        # print(skew_vec)
-        if skew_vec[k1] <= 0 and skew_vec[k2] > 0:
-            return fev, fev
-        elif skew_vec[k1] > 0 and skew_vec[k2] <= 0:
-            return nfev, nfev
-        elif skew_vec[k1] > skew_vec[k2]:
-            return fev, fev
-        else:
-            return nfev, nfev
+        # print(eigenvalues)
     # return eigenvectors[1], eigenvectors[1]
 
 

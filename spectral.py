@@ -115,7 +115,7 @@ def save_image_vis(model_lrp, image_file_path, bbox_scores):
     cv2.imwrite('lxmert/lxmert/experiments/paper/new.jpg', img)
 
 
-def test_save_image_vis(model_lrp, image_file_path, bbox_scores):
+def test_save_image_vis(model_lrp, image_file_path, bbox_scores, evs):
     # print(bbox_scores)
     # bbox_scores = image_scores
     _, top_bboxes_indices = bbox_scores.topk(k=5, dim=-1)
@@ -134,11 +134,16 @@ def test_save_image_vis(model_lrp, image_file_path, bbox_scores):
     for idx in top_bboxes_indices:
       idx = idx.item()
       plt.subplot(1, len(top_bboxes_indices), count)
-      plt.title(str(idx))
+      plt.title(str(idx) + " spectral " + evs)
       plt.axis('off')
       plt.imshow(cv2.imread('saved_images/{}.jpg'.format(idx)))
       count += 1
 
+def text_map(model_lrp, text_scores):
+    plt.title("SA word impotance")
+    plt.xticks(np.arange(len(text_scores)), model_lrp.question_tokens[1:-1])
+    plt.imshow(text_scores.unsqueeze(dim = 0).numpy())
+    plt.colorbar(orientation = "horizontal")
 
 def their_stuff():
 
@@ -165,7 +170,37 @@ def their_stuff():
 
         'COCO_val2014_000000085101',
 
-        'COCO_val2014_000000254834'
+        'COCO_val2014_000000254834',
+
+        'COCO_val2014_000000297681',
+
+        'COCO_val2014_000000193112',
+
+        'COCO_val2014_000000312081',
+
+        'COCO_val2014_000000472530',
+
+        'COCO_val2014_000000532164',
+
+        'COCO_val2014_000000009466',
+
+        'COCO_val2014_000000435187',
+
+        'COCO_val2014_000000353405',
+
+        'COCO_val2014_000000516414',
+
+        'COCO_val2014_000000097693',
+
+        'COCO_val2014_000000014450',
+
+        'COCO_val2014_000000008045', ##custom
+
+        'COCO_val2014_000000016499', ##custom,
+
+        'COCO_val2014_000000297180',
+
+        "D:\Thesis_2023-24\weird_tejju.jpg"
     ]
 
     test_questions_for_images = [
@@ -188,21 +223,51 @@ def their_stuff():
 
         "Are there clouds in the picture?",
 
-        "What is reflecting in the building's windows?"
+        "What is reflecting in the building's windows?",
+
+        "Why are the lights reflecting?",
+
+        " What is the person riding?", # failure
  
+        "How many kids have their hands up in the air?", # both weird
         ################## paper samples
+
+        "Is there a microwave in the room?",
+
+        "Which of the people is wearing a hat that would be appropriate for St. Patrick's Day?",
+
+        "How many shoes do you see?",
+
+        "What surrounds the vehicle?",
+
+        "How many clocks?",
+
+        "Are these yachts?",
+
+        "What color are blankets on this bed?",
+
+        "Is this a railroad track?",
+
+        "Where is the sink and where is the bathtub?",
+
+        "Is there a train?",
+
+        "Where are they?",
+
+        "Is there a jacket?"
     ]
 
-    # URL = 'lxmert/lxmert/experiments/paper/{0}/{0}.jpg'.format(image_ids[5])
-    URL = '../../data/root/val2014/{}.jpg'.format(image_ids[2])
 
-    R_t_t, R_t_i = lrp.generate_ours((URL, test_questions_for_images[2]),
+    # URL = '../../data/root/val2014/{}.jpg'.format(image_ids[-1])
+    URL = image_ids[-1]
+
+    R_t_t, R_t_i = lrp.generate_ours((URL, test_questions_for_images[-1]),
                                      use_lrp=False, normalize_self_attention=True, method_name="ours")
 
     image_scores = R_t_i[0]
     text_scores = R_t_t[0]
 
-    test_save_image_vis(model_lrp, URL, image_scores)
+    test_save_image_vis(model_lrp, URL, image_scores, "HC RL")
 
     save_image_vis(model_lrp, URL, image_scores)
     orig_image = Image.open(model_lrp.image_file_path)
@@ -285,7 +350,15 @@ def spectral_stuff():
 
         'COCO_val2014_000000097693',
 
-        'COCO_val2014_000000014450'
+        'COCO_val2014_000000014450',
+
+        'COCO_val2014_000000008045', ##custom
+
+        'COCO_val2014_000000016499', ##custom,
+
+        'COCO_val2014_000000297180',
+
+        "D:\Thesis_2023-24\weird_tejju.jpg"
     ]
 
     test_questions_for_images = [
@@ -331,23 +404,39 @@ def spectral_stuff():
 
         "What color are blankets on this bed?",
 
-        "Is this a railroad track?"
+        "Is this a railroad track?",
+
+        "Where is the sink and where is the bathtub?",
+
+        "Is there a train?",
+
+        "Where are they?",
+
+        "Is there a jacket?"
     ]
 
     # URL = 'lxmert/lxmert/experiments/paper/{0}/{0}.jpg'.format(image_ids[4])
-    URL = '../../data/root/val2014/{}.jpg'.format(image_ids[-2])
+    URL = '../../data/root/val2014/{}.jpg'.format(image_ids[15])
+    # URL = image_ids[-1]
     # URL = 'giraffe.jpg'
-    qs = test_questions_for_images[-2]
+    qs = test_questions_for_images[15]
     R_t_t, R_t_i = lrp.generate_ours_dsm((URL, qs), sign_method="mean", use_lrp=False, 
+              
                                          normalize_self_attention=True, method_name="dsm")
     text_scores = R_t_t
-    image_scores = R_t_i * -1
+    image_scores = R_t_i 
+    # print(f"Text scores: {text_scores}")
     # print(image_scores.topk(k = 5).indices)
-    test_save_image_vis(model_lrp, URL, image_scores)
+    text_map(model_lrp, text_scores)
+
+    test_save_image_vis(model_lrp, URL, image_scores, "+")
+    test_save_image_vis(model_lrp, URL, image_scores * -1, "-")
+
 
 
     save_image_vis(model_lrp, URL, image_scores)
     orig_image = Image.open(model_lrp.image_file_path)
+    # plt.imshow(text_scores.unsqueeze(dim = 0).numpy())
 
     fig, axs = plt.subplots(ncols=3, figsize=(20, 5))
     axs[0].imshow(orig_image)
@@ -364,9 +453,9 @@ def spectral_stuff():
     # axs[2].set_ylabel("language token number")
     axs[2].set_title('object relevance')
 
-    # text_scores = (text_scores - text_scores.min()) / (text_scores.max() - text_scores.min())
-    # vis_data_records = [visualization.VisualizationDataRecord(text_scores,0,0,0,0,0,model_lrp.question_tokens,1)]
-    # visualization.visualize_text(vis_data_records)
+    text_scores = (text_scores - text_scores.min()) / (text_scores.max() - text_scores.min())
+    vis_data_records = [visualization.VisualizationDataRecord(text_scores,0,0,0,0,0,model_lrp.question_tokens[1:-1],1)]
+    visualization.visualize_text(vis_data_records)
     print(f"QUESTION: {qs}")
     print("ANSWER:", vqa_answers[model_lrp.output.question_answering_score.argmax()])
     
@@ -375,7 +464,7 @@ def spectral_stuff():
 
 
 
-def transformer_attn ():
+def transformer_att ():
     model_lrp = ModelUsage(use_lrp=True)
     lrp = GeneratorOurs(model_lrp)
     baselines = GeneratorBaselines(model_lrp)
@@ -442,6 +531,7 @@ def transformer_attn ():
     axs[1].set_title('masked')
 
     text_scores = (text_scores - text_scores.min()) / (text_scores.max() - text_scores.min())
+    # plt.imshow(text_scores)
     vis_data_records = [visualization.VisualizationDataRecord(text_scores,0,0,0,0,0,model_lrp.question_tokens,1)]
     visualization.visualize_text(vis_data_records)
     print("ANSWER:", vqa_answers[model_lrp.output.question_answering_score.argmax()])
@@ -460,7 +550,7 @@ if __name__ == '__main__':
     # model_lrp = ModelUsage(use_lrp = True)
     # their_stuff()
     spectral_stuff()
-    # transformer_attn()
+    # transformer_att()
 
 
 # %%
