@@ -258,12 +258,12 @@ def spectral_stuff(model_lrp, lrp, vqa_answers, img_id, qs):
     R_t_t, R_t_i = lrp.generate_ours_dsm((URL, qs), sign_method="mean", use_lrp=False, 
                                          normalize_self_attention=True, method_name="dsm")
     text_scores = R_t_t
-    image_scores = R_t_i
+    image_scores = torch.abs(R_t_i)
     # print(image_scores)
 
     # print(image_scores.topk(k = 5).indices)
     test_save_image_vis(model_lrp, URL, image_scores, "spectral+")
-    test_save_image_vis(model_lrp, URL, image_scores * -1, "spectral-")
+    # test_save_image_vis(model_lrp, URL, image_scores * -1, "spectral-")
 
 
 

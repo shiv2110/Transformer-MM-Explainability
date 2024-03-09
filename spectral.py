@@ -385,7 +385,7 @@ def spectral_stuff():
 
         "Why are the lights reflecting?",
 
-        " What is the person riding?", # failure
+        "What is the person riding?", # failure
  
         "How many kids have their hands up in the air?", # both weird
         ################## paper samples
@@ -416,21 +416,23 @@ def spectral_stuff():
     ]
 
     # URL = 'lxmert/lxmert/experiments/paper/{0}/{0}.jpg'.format(image_ids[4])
-    URL = '../../data/root/val2014/{}.jpg'.format(image_ids[15])
+    URL = '../../data/root/val2014/{}.jpg'.format(image_ids[-2])
     # URL = image_ids[-1]
     # URL = 'giraffe.jpg'
-    qs = test_questions_for_images[15]
+    qs = test_questions_for_images[-2]
     R_t_t, R_t_i = lrp.generate_ours_dsm((URL, qs), sign_method="mean", use_lrp=False, 
               
                                          normalize_self_attention=True, method_name="dsm")
     text_scores = R_t_t
-    image_scores = R_t_i 
+    image_scores = torch.abs(R_t_i)
     # print(f"Text scores: {text_scores}")
+    # print(f"Image scores: {image_scores}")
+
     # print(image_scores.topk(k = 5).indices)
     text_map(model_lrp, text_scores)
 
     test_save_image_vis(model_lrp, URL, image_scores, "+")
-    test_save_image_vis(model_lrp, URL, image_scores * -1, "-")
+    # test_save_image_vis(model_lrp, URL, image_scores * -1, "-")
 
 
 
