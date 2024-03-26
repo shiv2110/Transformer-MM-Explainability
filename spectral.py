@@ -115,7 +115,7 @@ def save_image_vis(model_lrp, image_file_path, bbox_scores):
     cv2.imwrite('lxmert/lxmert/experiments/paper/new.jpg', img)
 
 
-def test_save_image_vis(model_lrp, image_file_path, bbox_scores, evs):
+def test_save_image_vis(model_lrp, image_file_path, bbox_scores, evs, layer_num):
     # print(bbox_scores)
     # bbox_scores = image_scores
     _, top_bboxes_indices = bbox_scores.topk(k=5, dim=-1)
@@ -134,16 +134,34 @@ def test_save_image_vis(model_lrp, image_file_path, bbox_scores, evs):
     for idx in top_bboxes_indices:
       idx = idx.item()
       plt.subplot(1, len(top_bboxes_indices), count)
-      plt.title(str(idx) + " spectral " + evs)
+      plt.title(str(idx) + " spectral " + evs + " " + layer_num)
       plt.axis('off')
       plt.imshow(cv2.imread('saved_images/{}.jpg'.format(idx)))
       count += 1
 
+# def text_map(model_lrp, text_scores, layer_num):
+#     plt.title("SA word impotance " + layer_num)
+#     plt.xticks(np.arange(len(text_scores)), model_lrp.question_tokens[:])
+#     plt.imshow(text_scores.unsqueeze(dim = 0).numpy())
+#     plt.colorbar(orientation = "horizontal")
+      
 def text_map(model_lrp, text_scores):
-    plt.title("SA word impotance")
-    plt.xticks(np.arange(len(text_scores)), model_lrp.question_tokens[1:-1])
-    plt.imshow(text_scores.unsqueeze(dim = 0).numpy())
-    plt.colorbar(orientation = "horizontal")
+    n_layers = len(text_scores)
+    plt.figure(figsize=(15, 10))
+    for j in range(len(text_scores)):
+        # if j == 3:
+            # print(text_scores[j])
+        plt.subplot(3, n_layers - 3, j + 1)
+        plt.title("SA word impotance " + str(j))
+        plt.xticks(np.arange(len(text_scores[j])), model_lrp.question_tokens[1:-1])
+        # plt.imshow(torch.abs(text_scores[j].unsqueeze(dim = 0)).numpy())
+        plt.imshow(text_scores[j].unsqueeze(dim = 0).numpy())
+        plt.colorbar(orientation = "horizontal")
+
+
+        # plt.title("SA word impotance " + str(j))
+        # plt.imshow(text_scores[j].unsqueeze(dim = 0).numpy())
+        # plt.colorbar(orientation = "horizontal")
 
 def their_stuff():
 
@@ -416,48 +434,51 @@ def spectral_stuff():
     ]
 
     # URL = 'lxmert/lxmert/experiments/paper/{0}/{0}.jpg'.format(image_ids[4])
-    URL = '../../data/root/val2014/{}.jpg'.format(image_ids[-2])
+    URL = '../../data/root/val2014/{}.jpg'.format(image_ids[2])
     # URL = image_ids[-1]
     # URL = 'giraffe.jpg'
-    qs = test_questions_for_images[-2]
+    qs = test_questions_for_images[2]
     R_t_t, R_t_i = lrp.generate_ours_dsm((URL, qs), sign_method="mean", use_lrp=False, 
               
                                          normalize_self_attention=True, method_name="dsm")
     text_scores = R_t_t
-    image_scores = torch.abs(R_t_i)
-    # print(f"Text scores: {text_scores}")
-    # print(f"Image scores: {image_scores}")
+    image_scores = R_t_i
 
-    # print(image_scores.topk(k = 5).indices)
+    # print(f"Shape of text scores: {len(text_scores)}")
+
+    
+    for i in range(len(image_scores)):    
+
+        # text_map(model_lrp, text_scores)
+        test_save_image_vis(model_lrp, URL, image_scores[i], "+", str(i))
+    # test_save_image_vis(model_lrp, URL, image_scores * -1, "-")
+        
+    # for j in range(len(text_scores)):
     text_map(model_lrp, text_scores)
 
-    test_save_image_vis(model_lrp, URL, image_scores, "+")
-    # test_save_image_vis(model_lrp, URL, image_scores * -1, "-")
 
 
-
-    save_image_vis(model_lrp, URL, image_scores)
+    # save_image_vis(model_lrp, URL, image_scores)
     orig_image = Image.open(model_lrp.image_file_path)
     # plt.imshow(text_scores.unsqueeze(dim = 0).numpy())
 
-    fig, axs = plt.subplots(ncols=3, figsize=(20, 5))
-    axs[0].imshow(orig_image)
-    axs[0].axis('off')
-    axs[0].set_title('original')
+    # fig, axs = plt.subplots(ncols=3, figsize=(20, 5))
+    # axs[0].imshow(orig_image)
+    # axs[0].axis('off')
+    # axs[0].set_title('original')
 
-    masked_image = Image.open('lxmert/lxmert/experiments/paper/new.jpg')
-    axs[1].imshow(masked_image)
-    axs[1].axis('off')
-    axs[1].set_title('masked')
+    # masked_image = Image.open('lxmert/lxmert/experiments/paper/new.jpg')
+    # axs[1].imshow(masked_image)
+    # axs[1].axis('off')
+    # axs[1].set_title('masked')
 
-    axs[2].imshow(R_t_i.unsqueeze(dim = 0).numpy())
-    axs[2].set_xlabel("object number")
-    # axs[2].set_ylabel("language token number")
-    axs[2].set_title('object relevance')
+    # axs[2].imshow(R_t_i.unsqueeze(dim = 0).numpy())
+    # axs[2].set_xlabel("object number")
+    # axs[2].set_title('object relevance')
 
-    text_scores = (text_scores - text_scores.min()) / (text_scores.max() - text_scores.min())
-    vis_data_records = [visualization.VisualizationDataRecord(text_scores,0,0,0,0,0,model_lrp.question_tokens[1:-1],1)]
-    visualization.visualize_text(vis_data_records)
+    # text_scores = (text_scores - text_scores.min()) / (text_scores.max() - text_scores.min())
+    # vis_data_records = [visualization.VisualizationDataRecord(text_scores,0,0,0,0,0,model_lrp.question_tokens[1:-1],1)]
+    # visualization.visualize_text(vis_data_records)
     print(f"QUESTION: {qs}")
     print("ANSWER:", vqa_answers[model_lrp.output.question_answering_score.argmax()])
     

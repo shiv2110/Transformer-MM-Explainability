@@ -1,11 +1,12 @@
 import numpy as np
 import torch
 import copy
-from scipy.sparse.linalg import eigsh
+from scipy.sparse.linalg import eigsh, eigs
 import torch.nn.functional as F
 from pymatting.util.util import row_sum
 from scipy.sparse import diags
 from scipy.stats import skew
+from .eigenshuffle import eigenshuffle
 
 # from sentence_transformers import SentenceTransformer
 # from torch.nn import CosineSimilarity as CosSim
@@ -354,70 +355,120 @@ class GeneratorOurs:
         
         # print(f"n-layers: {len(model.lxmert.encoder.visual_feats_list_x)}")
         
-        image_feats = model.lxmert.encoder.visual_feats_list_x[-2].detach().clone()
-        text_feats = model.lxmert.encoder.lang_feats_list_x[-2].detach().clone()
-        # print(f"Text feats shape: {text_feats.shape}")
+        # image_feats = model.lxmert.encoder.visual_feats_list_x[-2].detach().clone()
+        image_flen = len(model.lxmert.encoder.visual_feats_list_x)
+        text_flen = len(model.lxmert.encoder.lang_feats_list_x)
+        # text_feats = model.lxmert.encoder.lang_feats_list_x[-2].detach().clone()
 
 
-            # feats = F.normalize(feats, p = 2, dim = -1)
-        image_feats = image_feats.squeeze().cpu()
-        text_feats = text_feats.squeeze().cpu()[1:-1]
-        # print(f"Text feats shape: {text_feats.shape}")
-
-
-
-        # print(f"Feats 0,0 : {feats[1][:10]}")
-
-
-        def get_eigs (feats):
-            skew_vec = []
-            W_feat = (feats @ feats.T)
-            W_feat = (W_feat * (W_feat > 0))
-            W_feat = W_feat / W_feat.max() 
-
-            W_feat = W_feat.cpu().numpy()
-
-            for obj_feat in W_feat:
-                skew_vec.append(skew(obj_feat))
-            
-            skew_vec = np.array(skew_vec)
-
-            def get_diagonal (W):
-                D = row_sum(W)
-                D[D < 1e-12] = 1.0  # Prevent division by zero.
-                D = diags(D)
-                return D
-            
-            D = np.array(get_diagonal(W_feat).todense())
-
-            L = D - W_feat
-
-            try:
-                eigenvalues, eigenvectors = eigsh(L, k = 5, which = 'LM', sigma = 0, M = D)
-            except:
-                # eigenvalues, eigenvectors = eigsh(L, k = 5, which = 'LM', sigma = 0)
-                eigenvalues, eigenvectors = eigsh(L, k = 5, which = 'SM', M = D)
-     
-        
-            eigenvalues, eigenvectors = torch.from_numpy(eigenvalues), torch.from_numpy(eigenvectors.T).float()
-
-            fev, nfev = eigenvectors[1], (eigenvectors[1] * -1)
-            k1, k2 = fev.topk(k = 1).indices[0], nfev.topk(k = 1).indices[0]
-
+        # feats = F.normalize(feats, p = 2, dim = -1)
+        # image_feats = image_feats.squeeze().cpu()
+        # text_feats = text_feats.squeeze().cpu()[1:-1]
     
-            if skew_vec[k1] <= 0 and skew_vec[k2] > 0:
-                return fev
-            elif skew_vec[k1] > 0 and skew_vec[k2] <= 0:
-                return nfev
-            elif skew_vec[k1] > skew_vec[k2]:
-                return fev
-            else:
-                return nfev
+
+        def get_eigs_2 (feats_list, flen):
+            laplacians = []
+            for i in range(flen - 1):
+                # if modality is "image":
+                feats = F.normalize(feats_list[i].detach().clone().squeeze().cpu(), p = 2, dim = -1)
+                # else:
+                    # feats = F.normalize(feats_list[i].detach().clone().squeeze().cpu(), p = 2, dim = -1)[1:-1]
+
+                # print(f"Features' shape: {feats.shape}")
+                # skew_vec = []
+                W_feat = (feats @ feats.T)
+                W_feat = (W_feat * (W_feat > 0))
+                W_feat = W_feat / W_feat.max() 
+
+                W_feat = W_feat.cpu().numpy()
+
+
+                def get_diagonal (W):
+                    D = row_sum(W)
+                    D[D < 1e-12] = 1.0  # Prevent division by zero.
+                    D = diags(D)
+                    return D
+                
+                D = np.array(get_diagonal(W_feat).todense())
+
+                L = D - W_feat
+                # print(f"L shape: {L.shape}")
+                L_new = np.expand_dims(L, axis = 0)
+                laplacians.append(L_new)
+            laplacians = np.vstack(tuple(laplacians))
+
+            Dseq, Vseq = eigenshuffle(laplacians)
+
+            print(Vseq[-1])
+            return torch.from_numpy(Vseq[-1, :, 1].squeeze()).float()
         
-        image_fev = get_eigs(image_feats)
-        lang_fev = get_eigs(text_feats)
+
+
+        def get_eigs (feats_list, flen, modality):
+            layer_wise_fevs = []
+            for i in range(flen):
+                # feats = F.normalize(feats_list[i].detach().clone().squeeze().cpu(), p = 2, dim = -1)
+                # print(f"Features' shape: {feats.shape}")
+                if modality == "image":
+                    feats = F.normalize(feats_list[i].detach().clone().squeeze().cpu(), p = 2, dim = -1)
+                else:
+                    feats = F.normalize(feats_list[i].detach().clone().squeeze().cpu(), p = 2, dim = -1)[1:-1]
+
+                skew_vec = []
+                W_feat = (feats @ feats.T)
+                W_feat = (W_feat * (W_feat > 0))
+                W_feat = W_feat / W_feat.max() 
+
+                W_feat = W_feat.cpu().numpy()
+
+                for obj_feat in W_feat:
+                    skew_vec.append(skew(obj_feat))
+                
+                skew_vec = np.array(skew_vec)
+
+                def get_diagonal (W):
+                    D = row_sum(W)
+                    D[D < 1e-12] = 1.0  # Prevent division by zero.
+                    D = diags(D)
+                    return D
+                
+                D = np.array(get_diagonal(W_feat).todense())
+
+                L = D - W_feat
+
+                try:
+                    eigenvalues, eigenvectors = eigs(L, k = 5, which = 'LM', sigma = 0, M = D)
+                except:
+                    try:
+                        eigenvalues, eigenvectors = eigs(L, k = 5, which = 'LM', sigma = 0)
+                    except:
+                        eigenvalues, eigenvectors = eigs(L, k = 5, which = 'SM', M = D)
+
+        
+            
+                eigenvalues, eigenvectors = torch.from_numpy(eigenvalues), torch.from_numpy(eigenvectors.T).float()
+
+                fev, nfev = eigenvectors[1], (eigenvectors[1] * -1)
+                k1, k2 = fev.topk(k = 1).indices[0], nfev.topk(k = 1).indices[0]
+
+                layer_wise_fevs.append(fev)
+                # if skew_vec[k1] <= 0 and skew_vec[k2] > 0:
+                #     layer_wise_fevs.append(fev)
+                # elif skew_vec[k1] > 0 and skew_vec[k2] <= 0:
+                #     layer_wise_fevs.append(nfev)
+                # elif skew_vec[k1] > skew_vec[k2]:
+                #     layer_wise_fevs.append(fev)
+                # else:
+                #     layer_wise_fevs.append(nfev)
+            return layer_wise_fevs
+
+        
+        image_fevs = get_eigs(model.lxmert.encoder.visual_feats_list_x, image_flen, "image")
+        lang_fevs = get_eigs(model.lxmert.encoder.lang_feats_list_x, text_flen, "text")
         # print(lang_fev)
-        return torch.abs(lang_fev), image_fev
+        # return image_fev[:, 1], image_fev[:, 1]
+        return lang_fevs, image_fevs
+        # return torch.abs(image_fev), image_fev
 
 
         # if sign_method == 'max':
