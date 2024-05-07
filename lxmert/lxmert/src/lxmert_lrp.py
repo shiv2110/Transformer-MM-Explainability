@@ -894,9 +894,7 @@ class LxmertEncoder(nn.Module):
             # print(len(x_outputs))
             # lang_feats1, visual_feats1 = x_outputs[-2][0], x_outputs[-1][0]
             # print(visual_feats[0].shape)
-
-
-
+            
             ## edited here..this is main baka ##
             self.visual_feats_list_x.append(visual_feats.detach().clone())
             self.lang_feats_list_x.append(lang_feats.detach().clone())
