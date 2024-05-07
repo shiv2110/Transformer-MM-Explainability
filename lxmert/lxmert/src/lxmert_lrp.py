@@ -658,11 +658,11 @@ class LxmertXLayer(nn.Module):
             output_x_attentions=False,
     ):
         #################################################
-        if not hasattr(self, 'cross_attn_visual_feats'):
-            self.cross_attn_visual_feats = visual_input.clone()
+        # if not hasattr(self, 'cross_attn_visual_feats'):
+            # self.cross_attn_visual_feats = visual_input.clone()
 
-        if not hasattr(self, 'cross_attn_lang_feats'):
-            self.cross_attn_lang_feats = lang_input.clone()
+        # if not hasattr(self, 'cross_attn_lang_feats'):
+            # self.cross_attn_lang_feats = lang_input.clone()
 
         #################################################
 
@@ -738,30 +738,38 @@ class LxmertXLayer(nn.Module):
             visual_attention_mask,
             output_attentions=False,
     ):
-        lang_att_output, visual_att_output = self.cross_att(
+        ###################### cross attention layers baka ###################
+        lang_att_output1, visual_att_output1 = self.cross_att(
             lang_input=lang_feats,
             lang_attention_mask=lang_attention_mask,
             visual_input=visual_feats,
             visual_attention_mask=visual_attention_mask,
             output_x_attentions=output_attentions,
         )
-        attention_probs = lang_att_output[1:]
+
+        ###################### self attention layers baka ###################
+        attention_probs = lang_att_output1[1:]
         lang_att_output, visual_att_output = self.self_att(
-            lang_att_output[0],
+            lang_att_output1[0],
             lang_attention_mask,
-            visual_att_output[0],
+            visual_att_output1[0],
             visual_attention_mask,
         )
 
+        # print(f"{type(lang_att_output)}")
+        ###################### FC layers baka ###################
         lang_output, visual_output = self.output_fc(lang_att_output, visual_att_output)
         return (
             (
                 lang_output,
                 visual_output,
                 attention_probs[0],
+                # lang_att_output, #baka
+                # visual_att_output #baka
             )
             if output_attentions
-            else (lang_output, visual_output)
+            else (lang_output, visual_output) #baka
+            # else (lang_output, visual_output, lang_att_output, visual_att_output)
         )
 
     def relprop(self, cam, **kwargs):
@@ -858,6 +866,8 @@ class LxmertEncoder(nn.Module):
             language_hidden_states = language_hidden_states + (lang_feats,)
             if language_attentions is not None:
                 language_attentions = language_attentions + (l_outputs[1],)
+            
+            ########################## here ###############################
 
         # Run relational layers
         for layer_module in self.r_layers:
@@ -881,8 +891,13 @@ class LxmertEncoder(nn.Module):
                 output_attentions=output_attentions,
             )
             lang_feats, visual_feats = x_outputs[:2]
+            # print(len(x_outputs))
+            # lang_feats1, visual_feats1 = x_outputs[-2][0], x_outputs[-1][0]
+            # print(visual_feats[0].shape)
 
 
+
+            ## edited here..this is main baka ##
             self.visual_feats_list_x.append(visual_feats.detach().clone())
             self.lang_feats_list_x.append(lang_feats.detach().clone())
 
@@ -891,6 +906,9 @@ class LxmertEncoder(nn.Module):
             language_hidden_states = language_hidden_states + (lang_feats,)
             if cross_encoder_attentions is not None:
                 cross_encoder_attentions = cross_encoder_attentions + (x_outputs[2],)
+
+
+
         visual_encoder_outputs = (
             vision_hidden_states,
             vision_attentions if output_attentions else None,

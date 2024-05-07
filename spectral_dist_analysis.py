@@ -14,6 +14,7 @@ import numpy as np
 import cv2
 import torch
 import matplotlib.pyplot as plt
+import seaborn as sns
 from PIL import Image
 import torchvision.transforms as transforms
 from captum.attr import visualization
@@ -22,17 +23,14 @@ import requests
 import os
 import glob
 import sys
+import pandas as pd
 
 DEVICE = "cpu"
 
 
-# OBJ_URL = "https://raw.githubusercontent.com/airsplay/py-bottom-up-attention/master/demo/data/genome/1600-400-20/objects_vocab.txt"
-OBJ_URL = "util_files/objects_vocab.txt"
-# ATTR_URL = "https://raw.githubusercontent.com/airsplay/py-bottom-up-attention/master/demo/data/genome/1600-400-20/attributes_vocab.txt"
-ATTR_URL = "util_files/attributes_vocab.txt"
-# VQA_URL = "https://raw.githubusercontent.com/airsplay/lxmert/master/data/vqa/trainval_label2ans.json"
-VQA_URL = "util_files/trainval_label2ans.json"
-
+OBJ_URL = "https://raw.githubusercontent.com/airsplay/py-bottom-up-attention/master/demo/data/genome/1600-400-20/objects_vocab.txt"
+ATTR_URL = "https://raw.githubusercontent.com/airsplay/py-bottom-up-attention/master/demo/data/genome/1600-400-20/attributes_vocab.txt"
+VQA_URL = "https://raw.githubusercontent.com/airsplay/lxmert/master/data/vqa/trainval_label2ans.json"
 
 
 
@@ -155,11 +153,9 @@ def text_map(model_lrp, text_scores):
     for j in range(len(text_scores)):
         # if j == 3:
             # print(text_scores[j])
-        # text_scores[j] = torch.cat( ( torch.zeros(1), text_scores[j], torch.zeros(1)  ) )
         plt.subplot(3, n_layers - 3, j + 1)
         plt.title("SA word impotance " + str(j))
-        # plt.xticks(np.arange(len(text_scores[j])), model_lrp.question_tokens[1:-1])
-        plt.xticks(np.arange(len(text_scores[j])), model_lrp.question_tokens)
+        plt.xticks(np.arange(len(text_scores[j])), model_lrp.question_tokens[1:-1])
         # plt.imshow(torch.abs(text_scores[j].unsqueeze(dim = 0)).numpy())
         plt.imshow(text_scores[j].unsqueeze(dim = 0).numpy())
         plt.colorbar(orientation = "horizontal")
@@ -169,158 +165,55 @@ def text_map(model_lrp, text_scores):
         # plt.imshow(text_scores[j].unsqueeze(dim = 0).numpy())
         # plt.colorbar(orientation = "horizontal")
 
-def their_stuff():
+def viz_eigenvalues_dist (eigenvalues):
+    print(len(eigenvalues[0]))
+    n_layers = len(eigenvalues)
+    # plt.figure(figsize=(15, 10))
 
-    model_lrp = ModelUsage(use_lrp=True)
-    lrp = GeneratorOurs(model_lrp)
-    baselines = GeneratorBaselines(model_lrp)
-    vqa_answers = utils.get_data(VQA_URL)
+    # fig, axes = plt.subplots(ncols=2, nrows=3)
+    global_min = float('inf')
+    global_max = float('-inf')
 
-    image_ids = [
-        # giraffe
-        'COCO_val2014_000000185590',
-        # baseball
-        'COCO_val2014_000000127510',
-        # bath
-        'COCO_val2014_000000324266',
-        # frisbee
-        'COCO_val2014_000000200717',
+    for i in range(len(eigenvalues)):
+        minval = torch.min(eigenvalues[i].real)
+        maxval = torch.max(eigenvalues[i].real)
+        global_min = min(global_min, minval)
+        global_max = max(global_max, maxval)
 
-        'COCO_val2014_000000159282',
+    print(f"Global min: {global_min} and Global max: {global_max}")
 
-        'COCO_val2014_000000134886',
+    # for i, ax in zip(range(n_layers), axes.flat):
+    # # for i in range(3):
+    #     # for j in range(2):
+    #     # print(eigenvalues[i].real)
+    #     # minval = torch.min(eigenvalues[i].real)
+    #     # maxval = torch.max(eigenvalues[i].real)
 
-        'COCO_val2014_000000456784', 
+    #     # sns.kdeplot(x = eigenvalues[i].real.cpu().numpy(), y = np.arange(global_min, global_max, 0.01), ax = ax)
+    #     # sns.kdeplot(x = eigenvalues[i].real.cpu().numpy(), ax = ax)
+    #     df = pd.Series(eigenvalues[i].real, name = "EVals")
+    #     sns.histplot(data = df, x = "EVals", kde = True)
 
-        'COCO_val2014_000000085101',
+    fig, ax = plt.subplots(nrows = 3, ncols = 2, figsize = (8, 6))
+    count_idx = 0
+    for i in range(ax.shape[0]):
+        for j in range(0, ax.shape[1]):
+            # df = pd.DataFrame(eigenvalues[count_idx].real)
+            df = pd.Series(eigenvalues[i].real, name = "EVals")
 
-        'COCO_val2014_000000254834',
-
-        'COCO_val2014_000000297681',
-
-        'COCO_val2014_000000193112',
-
-        'COCO_val2014_000000312081',
-
-        'COCO_val2014_000000472530',
-
-        'COCO_val2014_000000532164',
-
-        'COCO_val2014_000000009466',
-
-        'COCO_val2014_000000435187',
-
-        'COCO_val2014_000000353405',
-
-        'COCO_val2014_000000516414',
-
-        'COCO_val2014_000000097693',
-
-        'COCO_val2014_000000014450',
-
-        'COCO_val2014_000000008045', ##custom
-
-        'COCO_val2014_000000016499', ##custom,
-
-        'COCO_val2014_000000297180',
-
-        "D:\Thesis_2023-24\weird_tejju.jpg"
-    ]
-
-    test_questions_for_images = [
-        ################## paper samples
-        # giraffe
-        "is the animal eating?",
-        # baseball
-        "did he catch the ball?",
-        # bath
-        "is the tub white ?",
-        # frisbee
-        "did the man just catch the frisbee?",
-
-        # "What kind of flowers are those?"
-        "What is at the bottom of the vase?",
-
-        "How many planes are in the air?",
-
-        "What kind of cake is that?",
-
-        "Are there clouds in the picture?",
-
-        "What is reflecting in the building's windows?",
-
-        "Why are the lights reflecting?",
-
-        " What is the person riding?", # failure
- 
-        "How many kids have their hands up in the air?", # both weird
-        ################## paper samples
-
-        "Is there a microwave in the room?",
-
-        "Which of the people is wearing a hat that would be appropriate for St. Patrick's Day?",
-
-        "How many shoes do you see?",
-
-        "What surrounds the vehicle?",
-
-        "How many clocks?",
-
-        "Are these yachts?",
-
-        "What color are blankets on this bed?",
-
-        "Is this a railroad track?",
-
-        "Where is the sink and where is the bathtub?",
-
-        "Is there a train?",
-
-        "Where are they?",
-
-        "Is there a jacket?"
-    ]
+            sns.histplot(data = df, kde = True, ax = ax[i][j])
+            count_idx += 1
 
 
-    URL = '../../data/root/val2014/{}.jpg'.format(image_ids[0])
-    # URL = image_ids[-1]
 
-    R_t_t, R_t_i = lrp.generate_ours((URL, test_questions_for_images[0]),
-                                     use_lrp=False, normalize_self_attention=True, method_name="ours")
 
-    image_scores = R_t_i[0]
-    text_scores = R_t_t[0]
+    # plt.show()
 
-    print(text_scores)
 
-    test_save_image_vis(model_lrp, URL, image_scores, "HC RL", "3")
-
-    save_image_vis(model_lrp, URL, image_scores)
-    orig_image = Image.open(model_lrp.image_file_path)
-
-    fig, axs = plt.subplots(ncols=3, figsize=(20, 5))
-    axs[0].imshow(orig_image)
-    axs[0].axis('off')
-    axs[0].set_title('original')
-
-    masked_image = Image.open('lxmert/lxmert/experiments/paper/new.jpg')
-    axs[1].imshow(masked_image)
-    axs[1].axis('off')
-    axs[1].set_title('masked')
-
-    axs[2].imshow(R_t_i.numpy())
-    # axs[2].axis('off')
-    axs[2].set_xlabel("object number")
-    axs[2].set_ylabel("language token number")
-    axs[2].set_title('R_t_i Map')
-
-    text_scores = (text_scores - text_scores.min()) / (text_scores.max() - text_scores.min())
-    vis_data_records = [visualization.VisualizationDataRecord(text_scores,0,0,0,0,0,model_lrp.question_tokens,1)]
-    visualization.visualize_text(vis_data_records)
-    print("ANSWER:", vqa_answers[model_lrp.output.question_answering_score.argmax()])
-    # plt.imshow(image_scores.unsqueeze(dim = 0).numpy())
-    # plt.imshow(R_t_i.numpy())
-    plt.show()
+    # for j in range(len(eigenvalues)):
+    #     plt.subplot(3, n_layers - 3, j + 1)
+    #     # plt.title("Eigenvalues Distribution in Layer - " + str(j))
+    #     sns.displot(eigenvalues[j].real.cpu().numpy(), kind = "kde")
 
 
 
@@ -442,32 +335,34 @@ def spectral_stuff():
     ]
 
     # URL = 'lxmert/lxmert/experiments/paper/{0}/{0}.jpg'.format(image_ids[4])
-    URL = '../../data/root/val2014/{}.jpg'.format(image_ids[-10])
+    URL = '../../data/root/val2014/{}.jpg'.format(image_ids[0])
     # URL = image_ids[-1]
     # URL = 'giraffe.jpg'
-    qs = test_questions_for_images[-10]
-    R_t_t, R_t_i, _, _ = lrp.generate_ours_dsm((URL, qs), how_many = 5, use_lrp=False, 
+    qs = test_questions_for_images[0]
+    R_t_t, R_t_i, ei, et = lrp.generate_ours_dsm((URL, qs), sign_method="mean", how_many = 10, use_lrp=False, 
               
                                          normalize_self_attention=True, method_name="dsm")
-    text_scores = R_t_t
-    image_scores = R_t_i
+    # text_scores = R_t_t
+    # image_scores = R_t_i
 
     # print(f"Shape of text scores: {len(text_scores)}")
+    # print(eigenvalues)
+    viz_eigenvalues_dist(ei)
+    viz_eigenvalues_dist(et)
 
-    
-    for i in range(len(image_scores)):    
+    # for i in range(len(image_scores)):    
 
         # text_map(model_lrp, text_scores)
-        test_save_image_vis(model_lrp, URL, image_scores[i], "+", str(i))
+        # test_save_image_vis(model_lrp, URL, image_scores[i], "+", str(i))
     # test_save_image_vis(model_lrp, URL, image_scores * -1, "-")
         
-
-    text_map(model_lrp, text_scores)
+    # for j in range(len(text_scores)):
+    # text_map(model_lrp, text_scores)
 
 
 
     # save_image_vis(model_lrp, URL, image_scores)
-    orig_image = Image.open(model_lrp.image_file_path)
+    # orig_image = Image.open(model_lrp.image_file_path)
     # plt.imshow(text_scores.unsqueeze(dim = 0).numpy())
 
     # fig, axs = plt.subplots(ncols=3, figsize=(20, 5))
@@ -494,83 +389,6 @@ def spectral_stuff():
     plt.show()
 
 
-
-def transformer_att ():
-    model_lrp = ModelUsage(use_lrp=True)
-    lrp = GeneratorOurs(model_lrp)
-    baselines = GeneratorBaselines(model_lrp)
-    vqa_answers = utils.get_data(VQA_URL)
-
-    # baselines.generate_transformer_attr(None)
-    # baselines.generate_attn_gradcam(None)
-    # baselines.generate_partial_lrp(None)
-    # baselines.generate_raw_attn(None)
-    # baselines.generate_rollout(None)
-
-    image_ids = [
-        # giraffe
-        'COCO_val2014_000000185590',
-        # baseball
-        'COCO_val2014_000000127510',
-        # bath
-        'COCO_val2014_000000324266',
-        # frisbee
-        'COCO_val2014_000000200717',
-
-        'COCO_val2014_000000159282',
-
-        'COCO_val2014_000000495064'
-    ]
-
-    test_questions_for_images = [
-        ################## paper samples
-        # giraffe
-        "is the animal eating?",
-        # baseball
-        "did he catch the ball?",
-        # bath
-        "is the tub white ?",
-        # frisbee
-        "did the man just catch the frisbee?",
-
-        "What kind of flowers are those?",
-
-        "What color is the bus?"
-        ################## paper samples
-    ]
-    URL = 'lxmert/lxmert/experiments/paper/{0}/{0}.jpg'.format(image_ids[4])
-    # URL = 'giraffe.jpg'
-
-    R_t_t, R_t_i = baselines.generate_transformer_attr((URL, test_questions_for_images[4]), method_name="transformer_attr")
-
-    text_scores = R_t_t[0]
-    image_scores = R_t_i[0]
-    test_save_image_vis(model_lrp, URL, image_scores)
-
-
-    save_image_vis(model_lrp, URL, image_scores)
-    orig_image = Image.open(model_lrp.image_file_path)
-
-    fig, axs = plt.subplots(ncols=2, figsize=(20, 5))
-    axs[0].imshow(orig_image)
-    axs[0].axis('off')
-    axs[0].set_title('original')
-
-    masked_image = Image.open('lxmert/lxmert/experiments/paper/new.jpg')
-    axs[1].imshow(masked_image)
-    axs[1].axis('off')
-    axs[1].set_title('masked')
-
-    text_scores = (text_scores - text_scores.min()) / (text_scores.max() - text_scores.min())
-    # plt.imshow(text_scores)
-    vis_data_records = [visualization.VisualizationDataRecord(text_scores,0,0,0,0,0,model_lrp.question_tokens,1)]
-    visualization.visualize_text(vis_data_records)
-    print("ANSWER:", vqa_answers[model_lrp.output.question_answering_score.argmax()])
-
-
-    plt.show()
-    
-
 if __name__ == '__main__':
     # main()
 
@@ -578,10 +396,4 @@ if __name__ == '__main__':
     files = glob.glob('saved_images/*')
     for f in files:
         os.remove(f)
-    # model_lrp = ModelUsage(use_lrp = True)
-    # their_stuff()
     spectral_stuff()
-    # transformer_att()
-
-
-# %%

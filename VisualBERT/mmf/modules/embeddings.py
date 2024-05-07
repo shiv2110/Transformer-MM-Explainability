@@ -444,6 +444,8 @@ class BertVisioLinguisticEmbeddings(BertEmbeddings):
                 image_text_alignment=image_text_alignment,
             )
 
+
+            ## HERE #############################################################################
             # Concate the two:
             embeddings = torch.cat(
                 (text_embeddings, v_embeddings), dim=1
@@ -451,6 +453,8 @@ class BertVisioLinguisticEmbeddings(BertEmbeddings):
 
         else:
             embeddings = text_embeddings
+
+        ## HERE #############################################################################
 
         embeddings = self.LayerNorm(embeddings)
         embeddings = self.dropout(embeddings)

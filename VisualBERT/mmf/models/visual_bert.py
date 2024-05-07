@@ -50,6 +50,9 @@ class VisualBERTBase(BertPreTrainedModel):
         config.output_attentions = output_attentions
         config.output_hidden_states = output_hidden_states
 
+
+        ##HEREEEEEEEEEEEEEEEEEE#####################################################################
+        ## we get a combo of image and text embeddings##############################################
         self.embeddings = BertVisioLinguisticEmbeddings(config)
         self.encoder = BertEncoder(config)
         self.pooler = BertPooler(config)
@@ -96,6 +99,9 @@ class VisualBERTBase(BertPreTrainedModel):
             )  # fp16 compatibility
         extended_attention_mask = (1.0 - extended_attention_mask) * -10000.0
 
+
+
+        ## HERE #########################################################################################
         embedding_output = self.embeddings(
             input_ids,
             token_type_ids,
@@ -113,6 +119,8 @@ class VisualBERTBase(BertPreTrainedModel):
                 not self.output_hidden_states
             )  # Don't support this for the bypass model
             text_length = input_ids.size(1)
+
+            ##### HEREEEEEEEEEEEEEEEEEEE TEXT AND IMAGE HAVE BEEN SEPARATED ###############################
             text_embedding_output = embedding_output[:, :text_length, :]
             visual_part = embedding_output[:, text_length:, :]
 

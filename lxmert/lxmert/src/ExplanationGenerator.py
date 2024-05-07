@@ -2,6 +2,8 @@ import numpy as np
 import torch
 import copy
 from scipy.sparse.linalg import eigsh, eigs
+from scipy.linalg import eig
+
 import torch.nn.functional as F
 from pymatting.util.util import row_sum
 from scipy.sparse import diags
@@ -252,8 +254,8 @@ class GeneratorOurs:
         one_hot[0, index] = 1
         one_hot_vector = one_hot
         one_hot = torch.from_numpy(one_hot).requires_grad_(True)
-        one_hot = torch.sum(one_hot * output)
-        # one_hot = torch.sum(one_hot.cuda() * output)
+        # one_hot = torch.sum(one_hot * output)
+        one_hot = torch.sum(one_hot.cuda() * output)
 
         model.zero_grad()
         one_hot.backward(retain_graph=True)
@@ -328,7 +330,8 @@ class GeneratorOurs:
     
 
 
-    def generate_ours_dsm(self, input, sign_method, index=None, use_lrp=True, normalize_self_attention=True, apply_self_in_rule_10=True, method_name="dsm"):
+    def generate_ours_dsm(self, input, how_many = 5, index=None, use_lrp=True, normalize_self_attention=True, apply_self_in_rule_10=True, 
+                          method_name="dsm"):
         self.use_lrp = use_lrp
         self.normalize_self_attention = normalize_self_attention
         self.apply_self_in_rule_10 = apply_self_in_rule_10
@@ -343,6 +346,7 @@ class GeneratorOurs:
         # print(len(self.cross_attn_viz_feat))
         # kwargs = {"alpha": 1}
         output = self.model_usage.forward(input).question_answering_score
+        # print(f"{output.last_hidden_state.shape}")
         model = self.model_usage.model
 
         model.zero_grad()
@@ -364,48 +368,12 @@ class GeneratorOurs:
         # feats = F.normalize(feats, p = 2, dim = -1)
         # image_feats = image_feats.squeeze().cpu()
         # text_feats = text_feats.squeeze().cpu()[1:-1]
-    
-
-        def get_eigs_2 (feats_list, flen):
-            laplacians = []
-            for i in range(flen - 1):
-                # if modality is "image":
-                feats = F.normalize(feats_list[i].detach().clone().squeeze().cpu(), p = 2, dim = -1)
-                # else:
-                    # feats = F.normalize(feats_list[i].detach().clone().squeeze().cpu(), p = 2, dim = -1)[1:-1]
-
-                # print(f"Features' shape: {feats.shape}")
-                # skew_vec = []
-                W_feat = (feats @ feats.T)
-                W_feat = (W_feat * (W_feat > 0))
-                W_feat = W_feat / W_feat.max() 
-
-                W_feat = W_feat.cpu().numpy()
-
-
-                def get_diagonal (W):
-                    D = row_sum(W)
-                    D[D < 1e-12] = 1.0  # Prevent division by zero.
-                    D = diags(D)
-                    return D
-                
-                D = np.array(get_diagonal(W_feat).todense())
-
-                L = D - W_feat
-                # print(f"L shape: {L.shape}")
-                L_new = np.expand_dims(L, axis = 0)
-                laplacians.append(L_new)
-            laplacians = np.vstack(tuple(laplacians))
-
-            Dseq, Vseq = eigenshuffle(laplacians)
-
-            print(Vseq[-1])
-            return torch.from_numpy(Vseq[-1, :, 1].squeeze()).float()
         
 
 
-        def get_eigs (feats_list, flen, modality):
+        def get_eigs (feats_list, flen, modality, how_many):
             layer_wise_fevs = []
+            layer_wise_eigenvalues = []
             for i in range(flen):
                 # feats = F.normalize(feats_list[i].detach().clone().squeeze().cpu(), p = 2, dim = -1)
                 # print(f"Features' shape: {feats.shape}")
@@ -435,23 +403,54 @@ class GeneratorOurs:
                 D = np.array(get_diagonal(W_feat).todense())
 
                 L = D - W_feat
+                # L[L < 0] = 0
+
+                # try:
+                # eigenvalues, eigenvectors = eig(L, b = D)
+                # except:
+                #     try:
+                #         eigenvalues, eigenvectors = eig(L, which = 'LM', sigma = 0)
+                #     except:
+                #         eigenvalues, eigenvectors = eig(L, which = 'SM', M = D)
+                L_shape = L.shape[0]
+                if how_many >= L_shape - 1:
+                    how_many = L_shape - 2
 
                 try:
-                    eigenvalues, eigenvectors = eigs(L, k = 5, which = 'LM', sigma = 0, M = D)
+                    eigenvalues, eigenvectors = eigs(L, k = how_many, which = 'LM', sigma = 0, M = D)
                 except:
                     try:
-                        eigenvalues, eigenvectors = eigs(L, k = 5, which = 'LM', sigma = 0)
+                        eigenvalues, eigenvectors = eigs(L, k = how_many, which = 'SM', sigma = 0)
                     except:
-                        eigenvalues, eigenvectors = eigs(L, k = 5, which = 'SM', M = D)
-
-        
-            
+                        eigenvalues, eigenvectors = eigs(L, k = how_many, which = 'LM')
                 eigenvalues, eigenvectors = torch.from_numpy(eigenvalues), torch.from_numpy(eigenvectors.T).float()
+                
 
-                fev, nfev = eigenvectors[1], (eigenvectors[1] * -1)
+
+                # USV = torch.linalg.svd(feats, full_matrices=False)
+                # eigenvectors = USV[0][:, :how_many].T.to('cpu', non_blocking=True)
+                # eigenvalues = USV[1][:how_many].to('cpu', non_blocking=True)
+                # print(f"SVD EVs shape: {eigenvectors.shape}")
+                # print(f"Eigenvalues type: {type(eigenvalues)}")
+                n_tuple = torch.kthvalue(eigenvalues.real, 2)
+                # print(f"N_Tuple: {n_tuple.indices}")
+                fev_idx = n_tuple.indices
+                # print(eigenvalues[fev_idx])
+                fev, nfev = eigenvectors[fev_idx], (eigenvectors[fev_idx] * -1)
                 k1, k2 = fev.topk(k = 1).indices[0], nfev.topk(k = 1).indices[0]
 
-                layer_wise_fevs.append(fev)
+                if modality == 'text':
+                    fev = torch.cat( ( torch.zeros(1), fev, torch.zeros(1)  ) )
+                    # fev = torch.cat( ( torch.zeros(1), fev ) )
+
+
+                # layer_wise_fevs.append( eigenvalues[fev_idx].real * fev )
+                layer_wise_fevs.append( torch.abs(fev) )
+                # layer_wise_fevs.append( fev )
+                # print(f"SVD fev shape: {fev.shape}")
+
+                # layer_wise_fevs.append(fev)
+                layer_wise_eigenvalues.append(eigenvalues)
                 # if skew_vec[k1] <= 0 and skew_vec[k2] > 0:
                 #     layer_wise_fevs.append(fev)
                 # elif skew_vec[k1] > 0 and skew_vec[k2] <= 0:
@@ -460,16 +459,25 @@ class GeneratorOurs:
                 #     layer_wise_fevs.append(fev)
                 # else:
                 #     layer_wise_fevs.append(nfev)
-            return layer_wise_fevs
+            return layer_wise_fevs, layer_wise_eigenvalues
 
         
-        image_fevs = get_eigs(model.lxmert.encoder.visual_feats_list_x, image_flen, "image")
-        lang_fevs = get_eigs(model.lxmert.encoder.lang_feats_list_x, text_flen, "text")
+        image_fevs, eigenvalues_image = get_eigs(model.lxmert.encoder.visual_feats_list_x, image_flen, "image", how_many)
+        lang_fevs, eigenvalues_text = get_eigs(model.lxmert.encoder.lang_feats_list_x, text_flen, "text", how_many)
         # print(lang_fev)
         # return image_fev[:, 1], image_fev[:, 1]
-        return lang_fevs, image_fevs
-        # return torch.abs(image_fev), image_fev
+        # print(f"Eigenvalues for Image: {eigenvalues_image}")
+        # print(f"Eigenvalues for Text: {eigenvalues_text}")
+        # lf = torch.stack(lang_fevs, dim=0).sum(dim=0)
+        # pf = torch.stack(image_fevs, dim=0).sum(dim=0)
 
+        # print(lf.shape, pf.shape)
+        # return [lf], [pf], eigenvalues_image, eigenvalues_text
+        # return lf, pf, eigenvalues_image, eigenvalues_text
+
+        return lang_fevs[-2], image_fevs[-2], eigenvalues_image, eigenvalues_text
+        # return lang_fevs, image_fevs, eigenvalues_image, eigenvalues_text
+    
 
         # if sign_method == 'max':
         #     # abs max should always be positive
@@ -671,7 +679,7 @@ class GeneratorBaselines:
         one_hot[0, index] = 1
         one_hot_vector = one_hot
         one_hot = torch.from_numpy(one_hot).requires_grad_(True)
-        # one_hot = torch.sum(one_hot.cuda() * output)
+        one_hot = torch.sum(one_hot.cuda() * output)
         one_hot = torch.sum(one_hot * output)
 
         model.zero_grad()
