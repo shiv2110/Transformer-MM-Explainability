@@ -151,12 +151,13 @@ def test_save_image_vis(model_lrp, image_file_path, bbox_scores, evs, layer_num)
       
 def text_map(model_lrp, text_scores):
     n_layers = len(text_scores)
+    print(f"Text n_layers: {n_layers}")
     plt.figure(figsize=(15, 10))
     for j in range(len(text_scores)):
         # if j == 3:
             # print(text_scores[j])
         # text_scores[j] = torch.cat( ( torch.zeros(1), text_scores[j], torch.zeros(1)  ) )
-        plt.subplot(3, n_layers - 3, j + 1)
+        plt.subplot(3, 3, j + 1)
         plt.title("SA word impotance " + str(j))
         # plt.xticks(np.arange(len(text_scores[j])), model_lrp.question_tokens[1:-1])
         plt.xticks(np.arange(len(text_scores[j])), model_lrp.question_tokens)
@@ -442,10 +443,10 @@ def spectral_stuff():
     ]
 
     # URL = 'lxmert/lxmert/experiments/paper/{0}/{0}.jpg'.format(image_ids[4])
-    URL = '../../data/root/val2014/{}.jpg'.format(image_ids[-10])
+    URL = '../../data/root/val2014/{}.jpg'.format(image_ids[4])
     # URL = image_ids[-1]
     # URL = 'giraffe.jpg'
-    qs = test_questions_for_images[-10]
+    qs = test_questions_for_images[4]
     R_t_t, R_t_i, _, _ = lrp.generate_ours_dsm((URL, qs), how_many = 5, use_lrp=False, 
               
                                          normalize_self_attention=True, method_name="dsm")

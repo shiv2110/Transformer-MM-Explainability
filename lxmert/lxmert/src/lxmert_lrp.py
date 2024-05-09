@@ -866,6 +866,9 @@ class LxmertEncoder(nn.Module):
             language_hidden_states = language_hidden_states + (lang_feats,)
             if language_attentions is not None:
                 language_attentions = language_attentions + (l_outputs[1],)
+
+            self.lang_feats_list_x.append(lang_feats.detach().clone()) #baka
+            
             
             ########################## here ###############################
 
@@ -873,12 +876,12 @@ class LxmertEncoder(nn.Module):
         for layer_module in self.r_layers:
             v_outputs = layer_module(visual_feats, visual_attention_mask, output_attentions=output_attentions)
             visual_feats = v_outputs[0]
-
-            # self.visual_feats_list_r.append(visual_feats.detach().clone())
-
             vision_hidden_states = vision_hidden_states + (visual_feats,)
             if vision_attentions is not None:
                 vision_attentions = vision_attentions + (v_outputs[1],)
+            
+            # self.visual_feats_list_x.append(visual_feats.detach().clone()) #baka
+
 
         # Run cross-modality layers
         ####################################################################################################
@@ -896,12 +899,12 @@ class LxmertEncoder(nn.Module):
             # print(visual_feats[0].shape)
             
             ## edited here..this is main baka ##
-            self.visual_feats_list_x.append(visual_feats.detach().clone())
-            self.lang_feats_list_x.append(lang_feats.detach().clone())
+            self.visual_feats_list_x.append(visual_feats.detach().clone()) #baka
+            # self.lang_feats_list_x.append(lang_feats.detach().clone()) #baka
 
 
-            vision_hidden_states = vision_hidden_states + (visual_feats,)
-            language_hidden_states = language_hidden_states + (lang_feats,)
+            vision_hidden_states = vision_hidden_states + (visual_feats,)  #baka
+            language_hidden_states = language_hidden_states + (lang_feats,) #baka
             if cross_encoder_attentions is not None:
                 cross_encoder_attentions = cross_encoder_attentions + (x_outputs[2],)
 
