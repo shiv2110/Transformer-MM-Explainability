@@ -1,3 +1,7 @@
 .idea/*
 VisualBERT/vqa_fine_tuned.th
 data/vqa/valid_mega.json
+nii_check_pt
+num_plate.jpg
+open_clip_test.ipynb
+CLIP_GradCAM_Visualization.ipynb

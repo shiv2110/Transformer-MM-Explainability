@@ -138,7 +138,7 @@ def test_save_image_vis(model_lrp, image_file_path, bbox_scores, evs, layer_num)
     for idx in top_bboxes_indices:
       idx = idx.item()
       plt.subplot(1, len(top_bboxes_indices), count)
-      plt.title(str(idx) + " spectral " + evs + " " + layer_num)
+      plt.title(str(idx) + " " + evs + " " + layer_num)
       plt.axis('off')
       plt.imshow(cv2.imread('saved_images/{}.jpg'.format(idx)))
       count += 1
@@ -162,7 +162,7 @@ def text_map(model_lrp, text_scores):
         # plt.xticks(np.arange(len(text_scores[j])), model_lrp.question_tokens[1:-1])
         plt.xticks(np.arange(len(text_scores[j])), model_lrp.question_tokens)
         # plt.imshow(torch.abs(text_scores[j].unsqueeze(dim = 0)).numpy())
-        plt.imshow(text_scores[j].unsqueeze(dim = 0).numpy())
+        plt.imshow(text_scores[j].unsqueeze(dim = 0).detach().numpy())
         plt.colorbar(orientation = "horizontal")
 
 
@@ -283,16 +283,17 @@ def their_stuff():
     ]
 
 
-    URL = '../../data/root/val2014/{}.jpg'.format(image_ids[0])
+    URL = '../../data/root/val2014/{}.jpg'.format(image_ids[4])
     # URL = image_ids[-1]
 
-    R_t_t, R_t_i = lrp.generate_ours((URL, test_questions_for_images[0]),
+    R_t_t, R_t_i = lrp.generate_ours((URL, test_questions_for_images[4]),
                                      use_lrp=False, normalize_self_attention=True, method_name="ours")
 
     image_scores = R_t_i[0]
     text_scores = R_t_t[0]
 
-    print(text_scores)
+    # print(text_scores)
+    # print(image_scores)
 
     test_save_image_vis(model_lrp, URL, image_scores, "HC RL", "3")
 
@@ -324,8 +325,7 @@ def their_stuff():
     plt.show()
 
 
-
-def spectral_stuff():
+def eigenCAM():
     model_lrp = ModelUsage(use_lrp=True)
     lrp = GeneratorOurs(model_lrp)
     # baselines = GeneratorBaselines(model_lrp)
@@ -443,12 +443,11 @@ def spectral_stuff():
     ]
 
     # URL = 'lxmert/lxmert/experiments/paper/{0}/{0}.jpg'.format(image_ids[4])
-    URL = '../../data/root/val2014/{}.jpg'.format(image_ids[4])
+    URL = '../../data/root/val2014/{}.jpg'.format(image_ids[1])
     # URL = image_ids[-1]
     # URL = 'giraffe.jpg'
-    qs = test_questions_for_images[4]
-    R_t_t, R_t_i, _, _ = lrp.generate_ours_dsm((URL, qs), how_many = 5, use_lrp=False, 
-              
+    qs = test_questions_for_images[1]
+    R_t_t, R_t_i = lrp.generate_eigen_cam((URL, qs), how_many = 5, use_lrp=True, 
                                          normalize_self_attention=True, method_name="dsm")
     text_scores = R_t_t
     image_scores = R_t_i
@@ -460,6 +459,181 @@ def spectral_stuff():
 
         # text_map(model_lrp, text_scores)
         test_save_image_vis(model_lrp, URL, image_scores[i], "+", str(i))
+    # test_save_image_vis(model_lrp, URL, image_scores * -1, "-")
+        
+
+    text_map(model_lrp, text_scores)
+
+    # save_image_vis(model_lrp, URL, image_scores)
+    orig_image = Image.open(model_lrp.image_file_path)
+    # plt.imshow(text_scores.unsqueeze(dim = 0).numpy())
+
+    print(f"QUESTION: {qs}")
+    print("ANSWER:", vqa_answers[model_lrp.output.question_answering_score.argmax()])
+    
+
+    plt.show()
+
+
+
+
+def spectral_stuff():
+    model_lrp = ModelUsage(use_lrp=True)
+    lrp = GeneratorOurs(model_lrp)
+    # baselines = GeneratorBaselines(model_lrp)
+    vqa_answers = utils.get_data(VQA_URL)
+
+    # baselines.generate_transformer_attr(None)
+    # baselines.generate_attn_gradcam(None)
+    # baselines.generate_partial_lrp(None)
+    # baselines.generate_raw_attn(None)
+    # baselines.generate_rollout(None)
+
+    image_ids = [
+        # giraffe
+        'COCO_val2014_000000185590',
+        # baseball
+        'COCO_val2014_000000127510',
+        # bath
+        'COCO_val2014_000000324266',
+        # frisbee
+        'COCO_val2014_000000200717',
+
+        'COCO_val2014_000000159282',
+
+        'COCO_val2014_000000134886',
+
+        'COCO_val2014_000000456784', 
+
+        'COCO_val2014_000000085101',
+
+        'COCO_val2014_000000254834',
+
+        'COCO_val2014_000000297681',
+
+        'COCO_val2014_000000193112',
+
+        'COCO_val2014_000000312081',
+
+        'COCO_val2014_000000472530',
+
+        'COCO_val2014_000000532164',
+
+        'COCO_val2014_000000009466',
+
+        'COCO_val2014_000000435187',
+
+        'COCO_val2014_000000353405',
+
+        'COCO_val2014_000000516414',
+
+        'COCO_val2014_000000097693',
+
+        'COCO_val2014_000000014450',
+
+        'COCO_val2014_000000008045', ##custom
+
+        'COCO_val2014_000000016499', ##custom,
+
+        'COCO_val2014_000000297180',
+
+        "D:\Thesis_2023-24\weird_tejju.jpg",
+
+        "D:\Thesis_2023-24\/banana2.jpg",
+
+        "D:\Thesis_2023-24\codes\METER\images\shiv.png",
+
+        "D:\Thesis_2023-24\codes\METER\images\clock_owl.jpg",
+
+        "D:\Thesis_2023-24\codes\METER\images\cows.jpg",
+
+        "D:\Thesis_2023-24\car1.jpg"
+
+
+    ]
+
+    test_questions_for_images = [
+        ################## paper samples
+        # giraffe
+        "is the animal eating?",
+        # baseball
+        "did he catch the ball?",
+        # bath
+        "is the tub white ?",
+        # frisbee
+        "did the man just catch the frisbee?",
+
+        # "What kind of flowers are those?"
+        "What is at the bottom of the vase?",
+
+        "How many planes are in the air?",
+
+        "What kind of cake is that?",
+
+        "Are there clouds in the picture?",
+
+        "What is reflecting in the building's windows?",
+
+        "Why are the lights reflecting?",
+
+        "What is the person riding?", # failure
+ 
+        "How many kids have their hands up in the air?", # both weird
+        ################## paper samples
+
+        "Is there a microwave in the room?",
+
+        "Which of the people is wearing a hat that would be appropriate for St. Patrick's Day?",
+
+        "How many shoes do you see?",
+
+        "What surrounds the vehicle?",
+
+        "How many clocks?",
+
+        "Are these yachts?",
+
+        "What color are blankets on this bed?",
+
+        "Is this a railroad track?",
+
+        "Where is the sink and where is the bathtub?",
+
+        "Is there a train?",
+
+        "Where are they?",
+
+        "Is there a jacket?", 
+
+        "What is the colour of the banana?", 
+
+        "Did she wear spectacles?", 
+
+        "What is the time in the clock?",
+
+        "What animals are there in the image?",
+
+        "What car is it?"
+        
+    ]
+
+
+    URL = '../../data/root/val2014/{}.jpg'.format(image_ids[12])
+    # URL = image_ids[-1]
+    # URL = 'giraffe.jpg'
+    qs = test_questions_for_images[12]
+    R_t_t, R_t_i, _, _ = lrp.generate_ours_dsm((URL, qs), how_many = 5, use_lrp=True, 
+                                         normalize_self_attention=True, method_name="dsm")
+    text_scores = R_t_t
+    image_scores = R_t_i
+
+    # print(f"Shape of text scores: {len(text_scores)}")
+
+    
+    for i in range(len(image_scores)):    
+
+        # text_map(model_lrp, text_scores)
+        test_save_image_vis(model_lrp, URL, image_scores[i], "Spectral", str(i))
     # test_save_image_vis(model_lrp, URL, image_scores * -1, "-")
         
 
@@ -546,6 +720,7 @@ def transformer_att ():
 
     text_scores = R_t_t[0]
     image_scores = R_t_i[0]
+    # print(image_scores)
     test_save_image_vis(model_lrp, URL, image_scores)
 
 
@@ -581,6 +756,7 @@ if __name__ == '__main__':
         os.remove(f)
     # model_lrp = ModelUsage(use_lrp = True)
     # their_stuff()
+    # eigenCAM()
     spectral_stuff()
     # transformer_att()
 

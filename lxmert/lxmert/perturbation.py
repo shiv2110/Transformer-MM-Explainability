@@ -20,6 +20,8 @@ from src.ExplanationGenerator import GeneratorOurs, GeneratorBaselines, Generato
 from src.param import args
 import random
 # import os
+import gc
+import torch
 
 
 # os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:512"
@@ -86,6 +88,7 @@ class ModelPert:
         normalized_boxes = output_dict.get("normalized_boxes")
         features = output_dict.get("roi_features")
         self.image_boxes_len = features.shape[1]
+        # print(f"Image boxes len: {self.image_boxes_len}")
         self.bboxes = output_dict.get("boxes")
         self.output = self.lxmert_vqa(
             input_ids=inputs.input_ids.to("cuda"),
@@ -130,6 +133,7 @@ class ModelPert:
             top_bboxes_indices = top_bboxes_indices.cpu().data.numpy()
 
             curr_features = features[:, top_bboxes_indices, :]
+            # print(f"Curr feats shape: {curr_features.shape}")
             curr_pos = normalized_boxes[:, top_bboxes_indices, :]
 
             output = self.lxmert_vqa(
@@ -170,6 +174,7 @@ class ModelPert:
             add_special_tokens=True,
             return_tensors="pt"
         )
+        # print(f"Item sent: {item['sent']}")
         # Very important that the boxes are normalized
         normalized_boxes = output_dict.get("normalized_boxes")
         features = output_dict.get("roi_features")
@@ -188,10 +193,20 @@ class ModelPert:
                                  [top_bboxes_indices[i] + 1 for i in range(len(top_bboxes_indices))]
             # text tokens must be sorted for positional embedding to work
             top_bboxes_indices = sorted(top_bboxes_indices)
+            # print(f"{top_bboxes_indices}")
+
+            # for id_idx in range(text_len + 2):
+            #     if id_idx not in top_bboxes_indices:
+            #         inputs.input_ids[:, id_idx] = 103
+            #         inputs.attention_mask[:, id_idx] = 0
 
             curr_input_ids = inputs.input_ids[:, top_bboxes_indices]
             curr_attention_mask = inputs.attention_mask[:, top_bboxes_indices]
             curr_token_ids = inputs.token_type_ids[:, top_bboxes_indices]
+
+            # curr_input_ids = inputs.input_ids
+            # curr_attention_mask = inputs.attention_mask
+            # curr_token_ids = inputs.token_type_ids
 
             output = self.lxmert_vqa(
                 input_ids=curr_input_ids.to("cuda"),
@@ -259,12 +274,16 @@ def main(args):
             # R_t_t, R_t_i, _, _ = ours.generate_ours_dsm(item, args.sign_method, use_lrp = False)
             R_t_t, R_t_i, _, _ = ours.generate_ours_dsm(item, use_lrp = False)
 
+        elif method_name == "eigen_cam":
+            # R_t_t, R_t_i, _, _ = ours.generate_ours_dsm(item, args.sign_method, use_lrp = False)
+            R_t_t, R_t_i = ours.generate_eigen_cam(item, use_lrp = False)
+
 
         else:
             print("Please enter a valid method name")
             return
         
-        if method_name == 'dsm':
+        if method_name == 'dsm' or method_name == 'eigen_cam':
             cam_image = R_t_i
             cam_text = R_t_t
         else:
@@ -279,6 +298,10 @@ def main(args):
             curr_pert_result = model_pert.perturbation_image(item, cam_image, cam_text, args.is_positive_pert)
         curr_pert_result = [round(res / (index+1) * 100, 2) for res in curr_pert_result]
         iterator.set_description("Acc: {}".format(curr_pert_result))
+        
+        del R_t_t, R_t_i
+        gc.collect()
+        torch.cuda.empty_cache()
 
 
 if __name__ == "__main__":

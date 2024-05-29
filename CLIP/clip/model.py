@@ -188,7 +188,7 @@ class ResidualAttentionBlock(nn.Module):
         self.attn_grad = attn_grad
 
     def attention(self, x: torch.Tensor):
-        print("Hello there {}!!!".format(x.shape))
+        # print("Hello there {}!!!".format(x.shape))
         self.attn_mask = self.attn_mask.to(dtype=x.dtype, device=x.device) if self.attn_mask is not None else None
         return self.attn(x, x, x, need_weights=False, attn_mask=self.attn_mask, attention_probs_forward_hook=self.set_attn_probs,
                          attention_probs_backwards_hook=self.set_attn_grad)[0]
@@ -196,6 +196,7 @@ class ResidualAttentionBlock(nn.Module):
     def forward(self, x: torch.Tensor):
         x = x + self.attention(self.ln_1(x))
         x = x + self.mlp(self.ln_2(x))
+        # print(f"here now: {x.shape}")
         return x
 
 
@@ -239,12 +240,17 @@ class VisualTransformer(nn.Module):
         x = self.transformer(x)
         x = x.permute(1, 0, 2)  # LND -> NLD
 
+        print(f"In visualTransformer: {x.shape}")
+        # image_feats = x.detach().clone() #baka
+
         x = self.ln_post(x[:, 0, :])
 
         if self.proj is not None:
             x = x @ self.proj
 
+        # return x, image_feats #baka
         return x
+
 
 
 class CLIP(nn.Module):
@@ -371,13 +377,17 @@ class CLIP(nn.Module):
         image_features = image_features / image_features.norm(dim=-1, keepdim=True)
         text_features = text_features / text_features.norm(dim=-1, keepdim=True)
 
+        # print("Here you go girl: {}".format(image_features.shape))
+
+
         # cosine similarity as logits
         logit_scale = self.logit_scale.exp()
         logits_per_image = logit_scale * image_features @ text_features.t()
         logits_per_text = logit_scale * text_features @ image_features.t()
 
         # shape = [global_batch_size, global_batch_size]
-        return logits_per_image, logits_per_text, image_features
+        print(f"logits image shape: {logits_per_image.shape}")
+        return logits_per_image, logits_per_text #baka
 
 
 def convert_weights(model: nn.Module):

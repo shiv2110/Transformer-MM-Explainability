@@ -37,6 +37,8 @@ from transformers.modeling_utils import PreTrainedModel
 from transformers.utils import logging
 from transformers.models.lxmert.configuration_lxmert import LxmertConfig
 
+# import numpy as np
+
 #link for configuration parameters
 # https://huggingface.co/transformers/v4.6.0/_modules/transformers/models/lxmert/configuration_lxmert.html
 
@@ -377,6 +379,7 @@ class LxmertAttention(nn.Module):
 ################################################
 
     def save_attn_gradients(self, attn_gradients):
+        # print(f"gradients: {attn_gradients}")
         self.attn_gradients = attn_gradients
 
     def get_attn_gradients(self):
@@ -867,7 +870,7 @@ class LxmertEncoder(nn.Module):
             if language_attentions is not None:
                 language_attentions = language_attentions + (l_outputs[1],)
 
-            self.lang_feats_list_x.append(lang_feats.detach().clone()) #baka
+            # self.lang_feats_list_x.append(lang_feats.detach().clone()) #baka
             
             
             ########################## here ###############################
@@ -900,7 +903,7 @@ class LxmertEncoder(nn.Module):
             
             ## edited here..this is main baka ##
             self.visual_feats_list_x.append(visual_feats.detach().clone()) #baka
-            # self.lang_feats_list_x.append(lang_feats.detach().clone()) #baka
+            self.lang_feats_list_x.append(lang_feats.detach().clone()) #baka
 
 
             vision_hidden_states = vision_hidden_states + (visual_feats,)  #baka
