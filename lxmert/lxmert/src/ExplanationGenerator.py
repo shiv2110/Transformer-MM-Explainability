@@ -524,9 +524,9 @@ class GeneratorOurs:
                 # feats = F.normalize(feats_list[i].detach().clone().squeeze().cpu(), p = 2, dim = -1)
                 # print(f"Features' shape: {feats.shape}")
                 if modality == "image":
-                    feats = F.normalize(feats_list[i].detach().clone().squeeze().cpu(), p = 2, dim = -1)
+                    feats = F.normalize(feats_list[i].detach().clone().squeeze(), p = 2, dim = -1)
                 else:
-                    feats = F.normalize(feats_list[i].detach().clone().squeeze().cpu(), p = 2, dim = -1)[1:-1]
+                    feats = F.normalize(feats_list[i].detach().clone().squeeze(), p = 2, dim = -1)[1:-1]
                     # feats1 = feats
 
                 # skew_vec = []
@@ -578,10 +578,11 @@ class GeneratorOurs:
                     grad = grad.reshape(-1, grad.shape[-2], grad.shape[-1])
                     grad = grad.clamp(min=0).mean(dim=0)
                     # print(f"GRAD SHAPE: {grad.size()}")
+                    fev = fev.to(model.device)
                     fev = grad @ fev.unsqueeze(1)
                     fev = fev[:, 0]
                     blk_count += 1
-                print(f"FEV SHAPE: {fev.size()}")
+                # print(f"FEV SHAPE: {fev.size()}")
                 layer_wise_fevs.append( torch.abs(fev) )
                 # layer_wise_fevs.append( fev )
                 # print(f"SVD fev shape: {fev.shape}")
