@@ -157,7 +157,7 @@ def text_map(model_lrp, text_scores):
         # if j == 3:
             # print(text_scores[j])
         # text_scores[j] = torch.cat( ( torch.zeros(1), text_scores[j], torch.zeros(1)  ) )
-        plt.subplot(3, 3, j + 1)
+        plt.subplot(3, 2, j + 1)
         plt.title("SA word impotance " + str(j))
         # plt.xticks(np.arange(len(text_scores[j])), model_lrp.question_tokens[1:-1])
         plt.xticks(np.arange(len(text_scores[j])), model_lrp.question_tokens)
@@ -618,11 +618,11 @@ def spectral_stuff():
     ]
 
 
-    URL = '../../data/root/val2014/{}.jpg'.format(image_ids[12])
+    URL = '../../data/root/val2014/{}.jpg'.format(image_ids[2])
     # URL = image_ids[-1]
     # URL = 'giraffe.jpg'
-    qs = test_questions_for_images[12]
-    R_t_t, R_t_i, _, _ = lrp.generate_ours_dsm((URL, qs), how_many = 5, use_lrp=True, 
+    qs = test_questions_for_images[2]
+    R_t_t, R_t_i, _, _ = lrp.generate_ours_dsm_grad((URL, qs), how_many = 5, use_lrp=True, 
                                          normalize_self_attention=True, method_name="dsm")
     text_scores = R_t_t
     image_scores = R_t_i

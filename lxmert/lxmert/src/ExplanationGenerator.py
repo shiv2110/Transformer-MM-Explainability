@@ -389,7 +389,7 @@ class GeneratorOurs:
             # blk_count = 0
             layer_wise_fevs = []
             layer_wise_eigenvalues = []
-            for i in range(flen - 1):
+            for i in range(flen):
                 # feats = F.normalize(feats_list[i].detach().clone().squeeze().cpu(), p = 2, dim = -1)
                 # print(f"Features' shape: {feats.shape}")
                 if modality == "image":
@@ -462,8 +462,6 @@ class GeneratorOurs:
                                                text_flen, "text", how_many)
 
         # return lang_fevs[-2], image_fevs[-2], eigenvalues_image, eigenvalues_text
-
-
         return lang_fevs, image_fevs, eigenvalues_image, eigenvalues_text
 
 
@@ -527,10 +525,6 @@ class GeneratorOurs:
                 # print(f"Features' shape: {feats.shape}")
                 if modality == "image":
                     feats = F.normalize(feats_list[i].detach().clone().squeeze().cpu(), p = 2, dim = -1)
-                    # feats1 = F.normalize(lang_feats_list[i].detach().clone().squeeze().cpu(), p = 2, dim = -1)[1:-1]
-                    # embedding = Linear(len(feats1), 36)
-                    # feats1 = embedding(feats1.T)
-                    # feats1 = feats1.T
                 else:
                     feats = F.normalize(feats_list[i].detach().clone().squeeze().cpu(), p = 2, dim = -1)[1:-1]
                     # feats1 = feats
@@ -542,10 +536,6 @@ class GeneratorOurs:
 
                 W_feat = W_feat.cpu().numpy()
 
-                # for obj_feat in W_feat:
-                #     skew_vec.append(skew(obj_feat))
-                
-                # skew_vec = np.array(skew_vec)
 
                 def get_diagonal (W):
                     D = row_sum(W)
@@ -557,14 +547,6 @@ class GeneratorOurs:
 
                 L = D - W_feat
                 # L[L < 0] = 0
-
-                # try:
-                # eigenvalues, eigenvectors = eig(L, b = D)
-                # except:
-                #     try:
-                #         eigenvalues, eigenvectors = eig(L, which = 'LM', sigma = 0)
-                #     except:
-                #         eigenvalues, eigenvectors = eig(L, which = 'SM', M = D)
                 L_shape = L.shape[0]
                 if how_many >= L_shape - 1:
                     how_many = L_shape - 2
@@ -579,37 +561,11 @@ class GeneratorOurs:
                 eigenvalues, eigenvectors = torch.from_numpy(eigenvalues), torch.from_numpy(eigenvectors.T).float()
                 
 
-
-                # USV = torch.linalg.svd(feats, full_matrices=False)
-                # eigenvectors = USV[0][:, :how_many].T.to('cpu', non_blocking=True)
-                # eigenvalues = USV[1][:how_many].to('cpu', non_blocking=True)
-                # print(f"SVD EVs shape: {eigenvectors.shape}")
-                # print(f"Eigenvalues type: {type(eigenvalues)}")
                 n_tuple = torch.kthvalue(eigenvalues.real, 2)
                 # print(f"N_Tuple: {n_tuple.indices}")
                 fev_idx = n_tuple.indices
-                # print(eigenvalues[fev_idx])
-                # fev_idx = 1 #baka
                 fev, nfev = eigenvectors[fev_idx], (eigenvectors[fev_idx] * -1)
                 k1, k2 = fev.topk(k = 1).indices[0], nfev.topk(k = 1).indices[0]
-
-
-
-                ########## eigenCAM style - baka #########################
-
-                # fev = fev.unsqueeze(dim = 1)
-                # fev = torch.abs(fev)
-                # fev = fev.repeat(1, 768)
-                # # print(f"fev unsueezed and repeated: {fev1.repeat(1, 768).shape}")
-                # cam = feats @ fev.T
-                # proj = Linear(cam.shape[0], 1)
-                # fev = proj(cam)
-                # # print(fev1.shape)
-                # fev = fev.squeeze()
-                # # print(f"net fev shape: {fev.shape}")
-
-
-                ########## eigenCAM style - baka #########################
 
 
                 if modality == 'text':
@@ -632,14 +588,7 @@ class GeneratorOurs:
 
                 # layer_wise_fevs.append(fev)
                 layer_wise_eigenvalues.append(eigenvalues)
-                # if skew_vec[k1] <= 0 and skew_vec[k2] > 0:
-                #     layer_wise_fevs.append(fev)
-                # elif skew_vec[k1] > 0 and skew_vec[k2] <= 0:
-                #     layer_wise_fevs.append(nfev)
-                # elif skew_vec[k1] > skew_vec[k2]:
-                #     layer_wise_fevs.append(fev)
-                # else:
-                #     layer_wise_fevs.append(nfev)
+
             return layer_wise_fevs, layer_wise_eigenvalues
 
         
@@ -649,22 +598,13 @@ class GeneratorOurs:
         
         lang_fevs, eigenvalues_text = get_eigs(model.lxmert.encoder.lang_feats_list_x, 
                                                text_flen, "text", how_many)
-        # print(lang_fev)
-        # return image_fev[:, 1], image_fev[:, 1]
-        # print(f"Eigenvalues for Image: {eigenvalues_image}")
-        # print(f"Eigenvalues for Text: {eigenvalues_text}")
-        # lf = torch.stack(lang_fevs, dim=0).sum(dim=0)
-        # pf = torch.stack(image_fevs, dim=0).sum(dim=0)
 
-        # print(lf.shape, pf.shape)
-        # return [lf], [pf], eigenvalues_image, eigenvalues_text
-        # return lf, pf, eigenvalues_image, eigenvalues_text
 
         # return lang_fevs[-2], image_fevs[-2], eigenvalues_image, eigenvalues_text
         new_fev = torch.stack(image_fevs, dim=0).sum(dim=0)
         new_fev1 = torch.stack(lang_fevs, dim=0).sum(dim=0)
 
-        return lang_fevs + [new_fev1], image_fevs + [new_fev], eigenvalues_image, eigenvalues_text
+        return new_fev1, new_fev, eigenvalues_image, eigenvalues_text
 
 
     def generate_eigen_cam(self, input, how_many = 5, index=None, use_lrp=True, normalize_self_attention=True, apply_self_in_rule_10=True, 
