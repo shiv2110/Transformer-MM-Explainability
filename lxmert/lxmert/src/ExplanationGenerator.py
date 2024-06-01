@@ -611,8 +611,8 @@ class GeneratorOurs:
         model.zero_grad()
         
         # image_feats = model.lxmert.encoder.visual_feats_list_x[-2].detach().clone()
-        image_flen = len(model.lxmert.encoder.visual_feats_list_x)
-        text_flen = len(model.lxmert.encoder.lang_feats_list_x)
+        # image_flen = len(model.lxmert.encoder.visual_feats_list_x)
+        # text_flen = len(model.lxmert.encoder.lang_feats_list_x)
         # text_feats = model.lxmert.encoder.lang_feats_list_x[-2].detach().clone()
 
 
@@ -621,21 +621,21 @@ class GeneratorOurs:
         # text_feats = text_feats.squeeze().cpu()[1:-1]
         
 
-        def get_eigs (feats_list, flen, modality, how_many):
-            layer_wise_fevs = []
-            layer_wise_eigenvalues = []
-            for i in range(flen):
+        def get_eigs (feats_list, modality, how_many):
+            # layer_wise_fevs = []
+            # layer_wise_eigenvalues = []
+            # for i in range(flen):
                 # feats = F.normalize(feats_list[i].detach().clone().squeeze().cpu(), p = 2, dim = -1)
                 # print(f"Features' shape: {feats.shape}")
-                if modality == "image":
-                    feats = F.normalize(feats_list[i].detach().clone().squeeze().cpu(), p = 2, dim = -1)
+            if modality == "image":
+                feats = F.normalize(feats_list.detach().clone().squeeze(), p = 2, dim = -1)
 
-                else:
-                    feats = F.normalize(feats_list[i].detach().clone().squeeze().cpu(), p = 2, dim = -1)[1:-1]
-                    # feats1 = feats
+            else:
+                feats = F.normalize(feats_list.detach().clone().squeeze(), p = 2, dim = -1)[1:-1]
+                # feats1 = feats
 
 
-                U, S, V = torch.linalg.svd(feats, full_matrices=False)
+            U, S, V = torch.linalg.svd(feats, full_matrices=False)
                 # print(f"Right singular value: {V.shape}")
                 # print(f"Left singular value: {U.shape}")
                 # print(f"Diagonal matrix: {S.shape}")
@@ -652,9 +652,9 @@ class GeneratorOurs:
                 # fev = torch.abs(fev)
                 # fev = fev.repeat(1, 768)
                 # # print(f"fev unsueezed and repeated: {fev1.repeat(1, 768).shape}")
-                cam = feats @ V.T
-                # proj = Linear(cam.shape[0], 1)
-                fev = cam[0]
+            cam = feats @ V.T
+            # proj = Linear(cam.shape[0], 1)
+            fev = cam[0]
                 # print(S)
                 # fev = fev.squeeze()
                 # # print(f"net fev shape: {fev.shape}")
@@ -663,25 +663,22 @@ class GeneratorOurs:
                 ########## eigenCAM style - baka #########################
 
 
-                if modality == 'text':
-                    fev = torch.cat( ( torch.zeros(1), fev, torch.zeros(1)  ) )
+            if modality == 'text':
+                fev = torch.cat( ( torch.zeros(1).to(model.device), fev, torch.zeros(1).to(model.device)  ) )
                     # fev = torch.cat( ( torch.zeros(1), fev ) )
 
-                # layer_wise_fevs.append( eigenvalues[fev_idx].real * fev )
-                layer_wise_fevs.append( torch.abs(fev) )
 
-
-            return layer_wise_fevs
+            return torch.abs(fev)
 
         
-        image_fevs = get_eigs(model.lxmert.encoder.visual_feats_list_x, 
+        image_fev = get_eigs(model.lxmert.encoder.visual_feats_list_x[-2], 
                                                 #  model.lxmert.encoder.lang_feats_list_x,
-                                                 image_flen, "image", how_many)
+                                                 "image", how_many)
         
-        lang_fevs = get_eigs(model.lxmert.encoder.lang_feats_list_x, 
-                                               text_flen, "text", how_many)
+        lang_fev = get_eigs(model.lxmert.encoder.lang_feats_list_x[-2], 
+                                               "text", how_many)
 
-        return lang_fevs[-2], image_fevs[-2]
+        return lang_fev, image_fev
         # return lang_fevs, image_fevs
 
 

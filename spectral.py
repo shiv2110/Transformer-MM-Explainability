@@ -622,7 +622,7 @@ def spectral_stuff():
     # URL = image_ids[-1]
     # URL = 'giraffe.jpg'
     qs = test_questions_for_images[1]
-    R_t_t, R_t_i = lrp.generate_ours_dsm_grad((URL, qs), how_many = 5, use_lrp=False, 
+    R_t_t, R_t_i = lrp.generate_eigen_cam((URL, qs), how_many = 5, use_lrp=False, 
                                          normalize_self_attention=True, method_name="dsm")
     text_scores = R_t_t
     image_scores = R_t_i
