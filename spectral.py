@@ -149,21 +149,21 @@ def test_save_image_vis(model_lrp, image_file_path, bbox_scores, evs, layer_num)
 #     plt.imshow(text_scores.unsqueeze(dim = 0).numpy())
 #     plt.colorbar(orientation = "horizontal")
       
-def text_map(model_lrp, text_scores):
-    n_layers = len(text_scores)
-    print(f"Text n_layers: {n_layers}")
-    plt.figure(figsize=(15, 10))
-    for j in range(len(text_scores)):
+def text_map(model_lrp, text_scores, layer_num):
+    # n_layers = len(text_scores)
+    # print(f"Text n_layers: {n_layers}")
+    plt.figure(figsize=(10, 8))
+    # for j in range(len(text_scores)):
         # if j == 3:
             # print(text_scores[j])
         # text_scores[j] = torch.cat( ( torch.zeros(1), text_scores[j], torch.zeros(1)  ) )
-        plt.subplot(3, 2, j + 1)
-        plt.title("SA word impotance " + str(j))
-        # plt.xticks(np.arange(len(text_scores[j])), model_lrp.question_tokens[1:-1])
-        plt.xticks(np.arange(len(text_scores[j])), model_lrp.question_tokens)
-        # plt.imshow(torch.abs(text_scores[j].unsqueeze(dim = 0)).numpy())
-        plt.imshow(text_scores[j].unsqueeze(dim = 0).detach().numpy())
-        plt.colorbar(orientation = "horizontal")
+    plt.subplot(1, 1, 1)
+    plt.title("SA word impotance " + layer_num)
+    # plt.xticks(np.arange(len(text_scores[j])), model_lrp.question_tokens[1:-1])
+    plt.xticks(np.arange(len(text_scores)), model_lrp.question_tokens)
+    # plt.imshow(torch.abs(text_scores[j].unsqueeze(dim = 0)).numpy())
+    plt.imshow(text_scores.unsqueeze(dim = 0).detach().numpy())
+    plt.colorbar(orientation = "horizontal")
 
 
         # plt.title("SA word impotance " + str(j))
@@ -618,11 +618,11 @@ def spectral_stuff():
     ]
 
 
-    URL = '../../data/root/val2014/{}.jpg'.format(image_ids[2])
+    URL = '../../data/root/val2014/{}.jpg'.format(image_ids[1])
     # URL = image_ids[-1]
     # URL = 'giraffe.jpg'
-    qs = test_questions_for_images[2]
-    R_t_t, R_t_i, _, _ = lrp.generate_ours_dsm_grad((URL, qs), how_many = 5, use_lrp=True, 
+    qs = test_questions_for_images[1]
+    R_t_t, R_t_i = lrp.generate_ours_dsm_grad((URL, qs), how_many = 5, use_lrp=False, 
                                          normalize_self_attention=True, method_name="dsm")
     text_scores = R_t_t
     image_scores = R_t_i
@@ -630,14 +630,14 @@ def spectral_stuff():
     # print(f"Shape of text scores: {len(text_scores)}")
 
     
-    for i in range(len(image_scores)):    
+    # for i in range(len(image_scores)):    
 
         # text_map(model_lrp, text_scores)
-        test_save_image_vis(model_lrp, URL, image_scores[i], "Spectral", str(i))
+    test_save_image_vis(model_lrp, URL, image_scores, "Spectral", '3')
     # test_save_image_vis(model_lrp, URL, image_scores * -1, "-")
         
 
-    text_map(model_lrp, text_scores)
+    text_map(model_lrp, text_scores, '3')
 
 
 

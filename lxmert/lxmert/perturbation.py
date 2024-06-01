@@ -272,11 +272,11 @@ def main(args):
 
         elif method_name == "dsm":
             # R_t_t, R_t_i, _, _ = ours.generate_ours_dsm(item, args.sign_method, use_lrp = False)
-            R_t_t, R_t_i, _, _ = ours.generate_ours_dsm(item, use_lrp = False)
+            R_t_t, R_t_i = ours.generate_ours_dsm(item, use_lrp = False)
 
         elif method_name == "dsm_grad":
             # R_t_t, R_t_i, _, _ = ours.generate_ours_dsm(item, args.sign_method, use_lrp = False)
-            R_t_t, R_t_i, _, _ = ours.generate_ours_dsm_grad(item, use_lrp = False)
+            R_t_t, R_t_i = ours.generate_ours_dsm_grad(item, use_lrp = False)
 
         elif method_name == "eigen_cam":
             # R_t_t, R_t_i, _, _ = ours.generate_ours_dsm(item, args.sign_method, use_lrp = False)

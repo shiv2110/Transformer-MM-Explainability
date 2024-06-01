@@ -347,15 +347,6 @@ class GeneratorOurs:
         self.normalize_self_attention = normalize_self_attention
         self.apply_self_in_rule_10 = apply_self_in_rule_10
 
-        # self.cross_attn_viz_feat = []
-        # self.cross_attn_lg_feat = []
-        # self.attn_viz_feats = []
-        # self.cross_attn_viz_feat_list = []
-        # self.cross_attn_lg_feat_list = []
-
-
-        # print(len(self.cross_attn_viz_feat))
-        # kwargs = {"alpha": 1}
         output = self.model_usage.forward(input).question_answering_score
         # print(f"{output.last_hidden_state.shape}")
         model = self.model_usage.model
@@ -364,105 +355,81 @@ class GeneratorOurs:
         one_hot[0, index] = 1
         one_hot_vector = one_hot
         one_hot = torch.from_numpy(one_hot).requires_grad_(True)
-        one_hot = torch.sum(one_hot * output) #baka
-        # one_hot = torch.sum(one_hot.cuda() * output) #baka
+        # one_hot = torch.sum(one_hot * output) #baka
+        one_hot = torch.sum(one_hot.cuda() * output) #baka
 
         model.zero_grad()
         one_hot.backward(retain_graph=True)
 
         # blocks = model.lxmert.encoder.x_layers
-        # self.cross_attn_viz_feat_list = model.lxmert.encoder.visual_feats_list_x
-        # self.cross_attn_lg_feat_list = model.lxmert.encoder.lang_feats_list_x
-
-        # text_prior = input[1]
-        # text_prior = model.lxmert.encoder.lang_feats_list_x[-2].squeeze().cpu()[0] #CLS token feature vector
-        
-        # print(f"n-layers: {len(model.lxmert.encoder.visual_feats_list_x)}")
         
         # image_feats = model.lxmert.encoder.visual_feats_list_x[-2].detach().clone()
-        image_flen = len(model.lxmert.encoder.visual_feats_list_x)
-        text_flen = len(model.lxmert.encoder.lang_feats_list_x)
+        # image_flen = len(model.lxmert.encoder.visual_feats_list_x)
+        # text_flen = len(model.lxmert.encoder.lang_feats_list_x)
         # text_feats = model.lxmert.encoder.lang_feats_list_x[-2].detach().clone()
 
         # blk_count = 0
-        def get_eigs (feats_list, flen, modality, how_many):
-            # blk_count = 0
-            layer_wise_fevs = []
-            layer_wise_eigenvalues = []
-            for i in range(flen):
-                # feats = F.normalize(feats_list[i].detach().clone().squeeze().cpu(), p = 2, dim = -1)
-                # print(f"Features' shape: {feats.shape}")
-                if modality == "image":
-                    feats = F.normalize(feats_list[i].detach().clone().squeeze().cpu(), p = 2, dim = -1)
-                else:
-                    feats = F.normalize(feats_list[i].detach().clone().squeeze().cpu(), p = 2, dim = -1)[1:-1]
-                    # feats1 = feats
+        def get_eigs (feats_list, modality, how_many):
 
-                W_feat = (feats @ feats.T)
-                W_feat = (W_feat * (W_feat > 0))
-                W_feat = W_feat / W_feat.max() 
+            if modality == "image":
+                feats = F.normalize(feats_list.detach().clone().squeeze().cpu(), p = 2, dim = -1)
+            else:
+                feats = F.normalize(feats_list.detach().clone().squeeze().cpu(), p = 2, dim = -1)[1:-1]
+                # feats1 = feats
 
-                W_feat = W_feat.cpu().numpy()
+            W_feat = (feats @ feats.T)
+            W_feat = (W_feat * (W_feat > 0))
+            W_feat = W_feat / W_feat.max() 
 
-                def get_diagonal (W):
-                    D = row_sum(W)
-                    D[D < 1e-12] = 1.0  # Prevent division by zero.
-                    D = diags(D)
-                    return D
-                
-                D = np.array(get_diagonal(W_feat).todense())
+            W_feat = W_feat.cpu().numpy()
 
-                L = D - W_feat
-                # L[L < 0] = 0
+            def get_diagonal (W):
+                D = row_sum(W)
+                D[D < 1e-12] = 1.0  # Prevent division by zero.
+                D = diags(D)
+                return D
+            
+            D = np.array(get_diagonal(W_feat).todense())
 
-                # try:
-                # eigenvalues, eigenvectors = eig(L, b = D)
-                # except:
-                #     try:
-                #         eigenvalues, eigenvectors = eig(L, which = 'LM', sigma = 0)
-                #     except:
-                #         eigenvalues, eigenvectors = eig(L, which = 'SM', M = D)
-                L_shape = L.shape[0]
-                if how_many >= L_shape - 1:
-                    how_many = L_shape - 2
+            L = D - W_feat
+            # L[L < 0] = 0
+            L_shape = L.shape[0]
+            if how_many >= L_shape - 1:
+                how_many = L_shape - 2
 
+            try:
+                eigenvalues, eigenvectors = eigs(L, k = how_many, which = 'LM', sigma = -0.5, M = D)
+            except:
                 try:
-                    eigenvalues, eigenvectors = eigs(L, k = how_many, which = 'LM', sigma = -0.5, M = D)
+                    eigenvalues, eigenvectors = eigs(L, k = how_many, which = 'LM', sigma = -0.5)
                 except:
-                    try:
-                        eigenvalues, eigenvectors = eigs(L, k = how_many, which = 'LM', sigma = -0.5)
-                    except:
-                        eigenvalues, eigenvectors = eigs(L, k = how_many, which = 'LM')
-                eigenvalues, eigenvectors = torch.from_numpy(eigenvalues), torch.from_numpy(eigenvectors.T).float()
-                
-                n_tuple = torch.kthvalue(eigenvalues.real, 2)
+                    eigenvalues, eigenvectors = eigs(L, k = how_many, which = 'LM')
+            eigenvalues, eigenvectors = torch.from_numpy(eigenvalues), torch.from_numpy(eigenvectors.T).float()
+            
+            n_tuple = torch.kthvalue(eigenvalues.real, 2)
                 # print(f"N_Tuple: {n_tuple.indices}")
-                fev_idx = n_tuple.indices
-                # print(eigenvalues[fev_idx])
-                # fev_idx = 1 #baka
-                fev, nfev = eigenvectors[fev_idx], (eigenvectors[fev_idx] * -1)
-                k1, k2 = fev.topk(k = 1).indices[0], nfev.topk(k = 1).indices[0]
+            fev_idx = n_tuple.indices
+            # print(eigenvalues[fev_idx])
+            # fev_idx = 1 #baka
+            fev = eigenvectors[fev_idx]
+            # k1, k2 = fev.topk(k = 1).indices[0], nfev.topk(k = 1).indices[0]
 
 
-                if modality == 'text':
-                    fev = torch.cat( ( torch.zeros(1), fev, torch.zeros(1)  ) )
-                    # fev = torch.cat( ( torch.zeros(1), fev ) )
+            if modality == 'text':
+                fev = torch.cat( ( torch.zeros(1), fev, torch.zeros(1)  ) )
+                # fev = torch.cat( ( torch.zeros(1), fev ) )
 
-                layer_wise_fevs.append( torch.abs(fev) )
-                layer_wise_eigenvalues.append(eigenvalues)
-
-            return layer_wise_fevs, layer_wise_eigenvalues
+            return torch.abs(fev)
 
         
-        image_fevs, eigenvalues_image = get_eigs(model.lxmert.encoder.visual_feats_list_x, 
-                                                #  model.lxmert.encoder.lang_feats_list_x,
-                                                 image_flen, "image", how_many)
+        image_fev = get_eigs(model.lxmert.encoder.visual_feats_list_x[-2], 
+                                                 "image", how_many)
         
-        lang_fevs, eigenvalues_text = get_eigs(model.lxmert.encoder.lang_feats_list_x, 
-                                               text_flen, "text", how_many)
+        lang_fev = get_eigs(model.lxmert.encoder.lang_feats_list_x[-2], 
+                                               "text", how_many)
 
         # return lang_fevs[-2], image_fevs[-2], eigenvalues_image, eigenvalues_text
-        return lang_fevs, image_fevs, eigenvalues_image, eigenvalues_text
+        return lang_fev, image_fev
 
 
 
@@ -520,13 +487,13 @@ class GeneratorOurs:
             blk_count = 0
             layer_wise_fevs = []
             layer_wise_eigenvalues = []
-            for i in range(flen - 1):
+            for i in range(flen):
                 # feats = F.normalize(feats_list[i].detach().clone().squeeze().cpu(), p = 2, dim = -1)
                 # print(f"Features' shape: {feats.shape}")
                 if modality == "image":
-                    feats = F.normalize(feats_list[i].detach().clone().squeeze(), p = 2, dim = -1)
+                    feats = F.normalize(feats_list[i].detach().clone().squeeze().cpu(), p = 2, dim = -1)
                 else:
-                    feats = F.normalize(feats_list[i].detach().clone().squeeze(), p = 2, dim = -1)[1:-1]
+                    feats = F.normalize(feats_list[i].detach().clone().squeeze().cpu(), p = 2, dim = -1)[1:-1]
                     # feats1 = feats
 
                 # skew_vec = []
@@ -564,17 +531,17 @@ class GeneratorOurs:
                 n_tuple = torch.kthvalue(eigenvalues.real, 2)
                 # print(f"N_Tuple: {n_tuple.indices}")
                 fev_idx = n_tuple.indices
-                fev, nfev = eigenvectors[fev_idx], (eigenvectors[fev_idx] * -1)
-                k1, k2 = fev.topk(k = 1).indices[0], nfev.topk(k = 1).indices[0]
+                fev = eigenvectors[fev_idx]
+                # k1, k2 = fev.topk(k = 1).indices[0], nfev.topk(k = 1).indices[0]
 
-
-                if modality == 'text':
-                    fev = torch.cat( ( torch.zeros(1), fev, torch.zeros(1)  ) )
+                fev = torch.abs(fev) #baka
+ 
                     # fev = torch.cat( ( torch.zeros(1), fev ) )
 
                 # layer_wise_fevs.append( eigenvalues[fev_idx].real * fev )
                 if modality == "image":
                     grad = blk[blk_count].visn_self_att.self.get_attn_gradients().detach()
+                    # print()
                     grad = grad.reshape(-1, grad.shape[-2], grad.shape[-1])
                     grad = grad.clamp(min=0).mean(dim=0)
                     # print(f"GRAD SHAPE: {grad.size()}")
@@ -582,22 +549,36 @@ class GeneratorOurs:
                     fev = grad @ fev.unsqueeze(1)
                     fev = fev[:, 0]
                     blk_count += 1
+                else:
+                    grad = blk[blk_count].lang_self_att.self.get_attn_gradients().detach()
+                    grad = grad[:, :, 1:-1, 1:-1]
+                    grad = grad.reshape(-1, grad.shape[-2], grad.shape[-1])
+                    grad = grad.clamp(min=0).mean(dim=0)
+                    # print(f"GRAD SHAPE: {grad.size()}")
+                    fev = fev.to(model.device)
+                    fev = grad @ fev.unsqueeze(1)
+                    fev = fev[:, 0]
+                    blk_count += 1
+                # print()
                 # print(f"FEV SHAPE: {fev.size()}")
+                # print(f"BLK: " + modality + ' count = ' + str(blk_count))
+                if modality == 'text':
+                    # print(grad)
+                    fev = torch.cat( ( torch.zeros(1).to(model.device), fev, torch.zeros(1).to(model.device)  ) )
+                    # fev = fev.to(model.device)
+
+
                 layer_wise_fevs.append( torch.abs(fev) )
-                # layer_wise_fevs.append( fev )
-                # print(f"SVD fev shape: {fev.shape}")
-
-                # layer_wise_fevs.append(fev)
                 layer_wise_eigenvalues.append(eigenvalues)
-
-            return layer_wise_fevs, layer_wise_eigenvalues
+      
+            return layer_wise_fevs
 
         
-        image_fevs, eigenvalues_image = get_eigs(model.lxmert.encoder.visual_feats_list_x, 
+        image_fevs = get_eigs(model.lxmert.encoder.visual_feats_list_x, 
                                                 #  model.lxmert.encoder.lang_feats_list_x,
-                                                 image_flen, "image", how_many)
+                                                 image_flen - 1, "image", how_many)
         
-        lang_fevs, eigenvalues_text = get_eigs(model.lxmert.encoder.lang_feats_list_x, 
+        lang_fevs = get_eigs(model.lxmert.encoder.lang_feats_list_x, 
                                                text_flen, "text", how_many)
 
 
@@ -605,7 +586,7 @@ class GeneratorOurs:
         new_fev = torch.stack(image_fevs, dim=0).sum(dim=0)
         new_fev1 = torch.stack(lang_fevs, dim=0).sum(dim=0)
 
-        return new_fev1, new_fev, eigenvalues_image, eigenvalues_text
+        return new_fev1, new_fev
 
 
     def generate_eigen_cam(self, input, how_many = 5, index=None, use_lrp=True, normalize_self_attention=True, apply_self_in_rule_10=True, 
