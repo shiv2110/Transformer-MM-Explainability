@@ -425,7 +425,7 @@ class GeneratorOurs:
         image_fev = get_eigs(model.lxmert.encoder.visual_feats_list_x[-2], 
                                                  "image", how_many)
         
-        lang_fev = get_eigs(model.lxmert.encoder.lang_feats_list_x[-2], 
+        lang_fev = get_eigs(model.lxmert.encoder.lang_feats_list_x[-1], 
                                                "text", how_many)
 
         # return lang_fevs[-2], image_fevs[-2], eigenvalues_image, eigenvalues_text
