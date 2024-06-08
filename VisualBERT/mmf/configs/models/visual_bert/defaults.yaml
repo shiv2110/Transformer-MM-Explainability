@@ -1,7 +1,7 @@
 model_config:
   visual_bert:
     bert_model_name: bert-base-uncased
-    training_head_type: pretraining
+    training_head_type: classification
     visual_embedding_dim: 2048
     special_visual_initialize: true
     embedding_strategy: plain
@@ -13,4 +13,5 @@ model_config:
     finetune_lr_multiplier: 1
     # Default points to BERT pooler strategy which is to take
     # representation of CLS token after passing it through a dense layer
-    pooler_strategy: default
+    pooler_strategy: vqa
+    learning_rate: false

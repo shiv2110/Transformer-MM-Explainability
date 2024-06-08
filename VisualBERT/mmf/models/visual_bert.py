@@ -23,7 +23,7 @@ from VisualBERT.mmf.utils.transform import (
 )
 from omegaconf import OmegaConf
 from torch import Tensor, nn
-from transformers.modeling_bert import (
+from transformers.models.bert.modeling_bert import (
     BertConfig,
     BertForPreTraining,
     BertPooler,
@@ -45,6 +45,7 @@ class VisualBERTBase(BertPreTrainedModel):
         self.config = config
 
         config.visual_embedding_dim = visual_embedding_dim
+        # print(f"AGAIN: {config.visual_embedding_dim}")
         config.embedding_strategy = embedding_strategy
         config.bypass_transformer = bypass_transformer
         config.output_attentions = output_attentions
@@ -109,6 +110,8 @@ class VisualBERTBase(BertPreTrainedModel):
             visual_embeddings_type=visual_embeddings_type,
             image_text_alignment=image_text_alignment,
         )
+
+        # print(f"embeddings: {embedding_output[0]}")
 
         if (
             self.bypass_transformer
@@ -291,7 +294,8 @@ class VisualBERTForClassification(nn.Module):
         self.config = config
         self.output_attentions = self.config.output_attentions
         self.output_hidden_states = self.config.output_hidden_states
-        self.pooler_strategy = self.config.get("pooler_strategy", "default")
+        # self.pooler_strategy = self.config.get("pooler_strategy", "default")
+        self.pooler_strategy = self.config.pooler_strategy
 
         # If bert_model_name is not specified, you will need to specify
         # all of the required parameters for BERTConfig and a pretrained
@@ -310,6 +314,7 @@ class VisualBERTForClassification(nn.Module):
                 output_hidden_states=self.config.output_hidden_states,
             )
         else:
+            # print(f"HEREEEEE: {self.config.visual_embedding_dim}")
             self.bert = VisualBERTBase.from_pretrained(
                 self.config.bert_model_name,
                 config=self.bert_config,
@@ -365,6 +370,8 @@ class VisualBERTForClassification(nn.Module):
             image_text_alignment,
         )
 
+        # print(sequence_output)
+
         if self.training_head_type == "nlvr2":
             # 2B * H => B * 2H
             b, h = pooled_output.size()
@@ -395,9 +402,12 @@ class VisualBERTForClassification(nn.Module):
             #     .unsqueeze(-1)
             #     .expand(index_to_gather.size(0), 1, sequence_output.size(-1)),
             # )
-            pooled_output = self.vqa_pooler(sequence_output, 1, torch.tensor(index_to_gather, device=sequence_output.device))
+            # pooled_output = self.vqa_pooler(sequence_output, 1, torch.tensor(index_to_gather, device=sequence_output.device))
+            pooled_output = self.vqa_pooler(sequence_output, 1, index_to_gather.clone().detach())
+
 
         pooled_output = self.dropout(pooled_output)
+        # print(pooled_output)
         logits = self.classifier(pooled_output)
         reshaped_logits = logits.contiguous().view(-1, self.num_labels)
         output_dict["scores"] = reshaped_logits
@@ -428,6 +438,10 @@ class VisualBERT(BaseModel):
             self.model = VisualBERTForPretraining(self.config)
         else:
             self.model = VisualBERTForClassification(self.config)
+            model_path = "D:/Thesis_2023-24/codes/Transformer-MM-Explainability/VisualBERT/vqa_fine_tuned.th"  # Path to your pretrained model
+            ckpt = torch.load(model_path, map_location=torch.device('cpu'))
+            self.model.load_state_dict(ckpt, strict=False)
+            self.model.eval()
 
         if self.config.special_visual_initialize:
             self.model.bert.embeddings.initialize_visual_from_pretrained()
@@ -524,14 +538,19 @@ class VisualBERT(BaseModel):
         else:
 
             if not torch.jit.is_scripting():
-                image_info = getattr(sample_list, "image_info_0", {})
-                image_dim_variable = getattr(image_info, "max_features", None)
-                image_feat_variable = getattr(sample_list, "image_feature_0", None)
+                # print("NIIIIIIIIIIIIIIIIIIIIIIII")
+                image_feat_variable = sample_list["image_feature_0"]
+                # print(f"image feat var: {image_feat_variable[0]}")
+                image_dim_variable = None
+                # image_info = getattr(sample_list, "image_info_0", {})
+                # image_dim_variable = getattr(image_info, "max_features", None)
+                # image_feat_variable = getattr(sample_list, "image_feature_0", None)
             else:
                 image_feat_variable = sample_list["image_feature_0"]
                 image_dim_variable = None
 
         if image_dim_variable is None:
+            # print(f"image feat: {sample_list['image_feature_0'].size()}")
             image_dim_variable = sample_list["image_feature_0"].new_full(
                 size=(image_feat_variable.size(0), 1),
                 fill_value=image_feat_variable.size(1),
@@ -561,6 +580,7 @@ class VisualBERT(BaseModel):
             assert len(image_dim.size()) == len(image_mask.size())
         image_mask = image_mask < image_dim
         sample_list["image_mask"] = image_mask.long()
+        # print(f"Image mask: {sample_list['image_mask']}")
 
         return sample_list
 
@@ -579,6 +599,8 @@ class VisualBERT(BaseModel):
                 "image_feature_0" in sample_list
             ), "Key 'image_feature_0' is required in TorchScript model"
 
+
+        self.build()
         sample_list = self.update_sample_list_based_on_head(sample_list)
         sample_list = self.add_custom_params(sample_list)
         sample_list = self.flatten_for_bert(sample_list)
@@ -590,10 +612,12 @@ class VisualBERT(BaseModel):
         sample_list["input_ids"] = sample_list["input_ids"][:, :sum_text_mask]
         sample_list["input_mask"] = sample_list["input_mask"][:, :sum_text_mask]
         sample_list["segment_ids"] = sample_list["segment_ids"][:, :sum_text_mask]
-        sample_list["lm_label_ids"] = sample_list["lm_label_ids"][:, :sum_text_mask]
-        sample_list["lm_label_ids"] = sample_list["lm_label_ids"][:, :sum_text_mask]
+        # sample_list["lm_label_ids"] = sample_list["lm_label_ids"][:, :sum_text_mask]
+        # sample_list["lm_label_ids"] = sample_list["lm_label_ids"][:, :sum_text_mask]
         sample_list["token_type_ids"] = sample_list["token_type_ids"][:, :sum_text_mask]
         sample_list["attention_mask"] = torch.cat([sample_list["attention_mask"][:, :sum_text_mask], sample_list["attention_mask"][:, max_text_len:]], dim=1)
+
+        # print(f"SAMPLE LIST: {sample_list}")
 
         output_dict = self.model(
             sample_list["input_ids"],

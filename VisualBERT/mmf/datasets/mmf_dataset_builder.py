@@ -4,7 +4,7 @@ import typing
 import warnings
 from copy import deepcopy
 
-import mmf.utils.download as download
+import VisualBERT.mmf.utils.download as download
 import torch
 from VisualBERT.mmf.datasets.base_dataset_builder import BaseDatasetBuilder
 from VisualBERT.mmf.datasets.concat_dataset import MMFConcatDataset

@@ -355,8 +355,8 @@ class GeneratorOurs:
         one_hot[0, index] = 1
         one_hot_vector = one_hot
         one_hot = torch.from_numpy(one_hot).requires_grad_(True)
-        # one_hot = torch.sum(one_hot * output) #baka
-        one_hot = torch.sum(one_hot.cuda() * output) #baka
+        one_hot = torch.sum(one_hot * output) #baka
+        # one_hot = torch.sum(one_hot.cuda() * output) #baka
 
         model.zero_grad()
         one_hot.backward(retain_graph=True)
@@ -534,7 +534,7 @@ class GeneratorOurs:
                 fev = eigenvectors[fev_idx]
                 # k1, k2 = fev.topk(k = 1).indices[0], nfev.topk(k = 1).indices[0]
 
-                fev = torch.abs(fev) #baka
+                # fev = torch.abs(fev) #baka
  
                     # fev = torch.cat( ( torch.zeros(1), fev ) )
 
@@ -562,11 +562,12 @@ class GeneratorOurs:
                 # print()
                 # print(f"FEV SHAPE: {fev.size()}")
                 # print(f"BLK: " + modality + ' count = ' + str(blk_count))
+                # fev = torch.abs(fev)
+                # fev = (fev - torch.min(fev))/(torch.max(fev) - torch.min(fev))
                 if modality == 'text':
                     # print(grad)
                     fev = torch.cat( ( torch.zeros(1).to(model.device), fev, torch.zeros(1).to(model.device)  ) )
                     # fev = fev.to(model.device)
-
 
                 layer_wise_fevs.append( torch.abs(fev) )
                 layer_wise_eigenvalues.append(eigenvalues)
@@ -585,8 +586,12 @@ class GeneratorOurs:
         # return lang_fevs[-2], image_fevs[-2], eigenvalues_image, eigenvalues_text
         new_fev = torch.stack(image_fevs, dim=0).sum(dim=0)
         new_fev1 = torch.stack(lang_fevs, dim=0).sum(dim=0)
+        # new_fev1 = (new_fev1 - torch.min(new_fev1))/(torch.max(new_fev1) - torch.min(new_fev1))
+        # new_fev = (new_fev - torch.min(new_fev))/(torch.max(new_fev) - torch.min(new_fev))
 
         return new_fev1, new_fev
+
+
 
 
     def generate_eigen_cam(self, input, how_many = 5, index=None, use_lrp=True, normalize_self_attention=True, apply_self_in_rule_10=True, 

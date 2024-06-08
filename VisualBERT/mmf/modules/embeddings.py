@@ -15,7 +15,7 @@ from VisualBERT.mmf.modules.layers import AttnPool1d, Identity
 from VisualBERT.mmf.utils.file_io import PathManager
 from VisualBERT.mmf.utils.vocab import Vocab
 from torch import Tensor, nn
-from transformers.modeling_bert import BertEmbeddings
+from transformers.models.bert.modeling_bert import BertEmbeddings
 
 
 class TextEmbedding(nn.Module):
@@ -312,6 +312,7 @@ class BertVisioLinguisticEmbeddings(BertEmbeddings):
             config.max_position_embeddings, config.hidden_size
         )
 
+        # print()
         self.projection = nn.Linear(config.visual_embedding_dim, config.hidden_size)
 
     def initialize_visual_from_pretrained(self):
@@ -334,10 +335,12 @@ class BertVisioLinguisticEmbeddings(BertEmbeddings):
             token_type_ids = torch.zeros_like(input_ids)
 
         words_embeddings = self.word_embeddings(input_ids)
+        # print(words_embeddings[0])
 
         position_embeddings = self.position_embeddings(position_ids)
         token_type_embeddings = self.token_type_embeddings(token_type_ids)
         embeddings = words_embeddings + position_embeddings + token_type_embeddings
+        # print(embeddings[0])
         return embeddings
 
     def encode_image(
@@ -346,8 +349,10 @@ class BertVisioLinguisticEmbeddings(BertEmbeddings):
         visual_embeddings_type: Tensor,
         image_text_alignment: Optional[Tensor] = None,
     ) -> Tensor:
+        # print(visual_embeddings[0])
 
         visual_embeddings = self.projection(visual_embeddings)
+        print(visual_embeddings[0])
         token_type_embeddings_visual = self.token_type_embeddings_visual(
             visual_embeddings_type
         )
@@ -436,6 +441,8 @@ class BertVisioLinguisticEmbeddings(BertEmbeddings):
         # text embeddings
         text_embeddings = self.encode_text(input_ids, token_type_ids=token_type_ids)
 
+        # print(text_embeddings[1], visual_embeddings[1])
+
         # visual embeddings
         if visual_embeddings is not None and visual_embeddings_type is not None:
             v_embeddings = self.encode_image(
@@ -450,6 +457,8 @@ class BertVisioLinguisticEmbeddings(BertEmbeddings):
             embeddings = torch.cat(
                 (text_embeddings, v_embeddings), dim=1
             )  # concat the visual embeddings after the attentions
+
+            # print(text_embeddings[0], v_embeddings[0])
 
         else:
             embeddings = text_embeddings

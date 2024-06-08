@@ -181,6 +181,8 @@ class ResidualAttentionBlock(nn.Module):
         self.attn_probs = None
         self.attn_grad = None
 
+        self.feats = None
+
     def set_attn_probs(self, attn_probs):
         self.attn_probs = attn_probs
 
@@ -197,6 +199,8 @@ class ResidualAttentionBlock(nn.Module):
         x = x + self.attention(self.ln_1(x))
         x = x + self.mlp(self.ln_2(x))
         # print(f"here now: {x.shape}")
+        # if x.size()[-2] == 768:
+        self.feats = x
         return x
 
 
@@ -228,6 +232,8 @@ class VisualTransformer(nn.Module):
         self.ln_post = LayerNorm(width)
         self.proj = nn.Parameter(scale * torch.randn(width, output_dim))
 
+        # self.visual_feats = []
+
     def forward(self, x: torch.Tensor):
         x = self.conv1(x)  # shape = [*, width, grid, grid]
         x = x.reshape(x.shape[0], x.shape[1], -1)  # shape = [*, width, grid ** 2]
@@ -240,7 +246,8 @@ class VisualTransformer(nn.Module):
         x = self.transformer(x)
         x = x.permute(1, 0, 2)  # LND -> NLD
 
-        print(f"In visualTransformer: {x.shape}")
+        # print(f"In visualTransformer: {x.shape}")
+        # self.visual_feats.append(x.detach())
         # image_feats = x.detach().clone() #baka
 
         x = self.ln_post(x[:, 0, :])

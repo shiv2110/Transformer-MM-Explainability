@@ -407,6 +407,7 @@ def to_device(
         )
         return sample_list
 
+
     if sample_list.get_device() != device:
         sample_list = sample_list.to(device)
     return sample_list

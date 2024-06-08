@@ -24,6 +24,7 @@ Various decorators for registry different kind of classes with unique keys
 - Register a decoder: ``@registry.register_decoder``
 - Register a transformer backend: ``@registry.register_transformer_backend``
 """
+# from VisualBERT.mmf.utils.env import setup_imports
 from VisualBERT.mmf.utils.env import setup_imports
 
 

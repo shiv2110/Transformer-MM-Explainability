@@ -418,7 +418,7 @@ class LxmertAttention(nn.Module):
         attention_scores = self.matmul1([query_layer, key_layer.transpose(-1, -2)])
 
         ################################
-        self.save_attn(attention_scores)
+        # self.save_attn(attention_scores) #baka
         ################################
 
         attention_scores = attention_scores / math.sqrt(self.attention_head_size)

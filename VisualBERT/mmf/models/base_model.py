@@ -164,7 +164,8 @@ class BaseModel(nn.Module):
 
     def __call__(self, sample_list, *args, **kwargs):
         # Move to proper device i.e. same as the model before passing
-        model_device = next(self.parameters()).device
+        # model_device = next(self.parameters()).device
+        model_device = "cuda"
         sample_list = to_device(sample_list, model_device)
 
         model_output = super().__call__(sample_list, *args, **kwargs)

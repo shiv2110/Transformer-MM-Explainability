@@ -1,3 +1,17 @@
 model_config:
   visual_bert:
-    training_head_type: classification
+    bert_model_name: bert-base-uncased
+    training_head_type: vqa
+    output_attentions: false
+    output_hidden_states: false
+    pooler_strategy: vqa
+    visual_embedding_dim: 2048
+    embedding_strategy: plain
+    bypass_transformer: false
+    random_initialize: false
+    num_labels: 3129
+    hidden_size : 768
+    hidden_dropout_prob : 0.1
+    special_visual_initialize: true
+    type_vocab_size : 2
+    vocab_size: 30522

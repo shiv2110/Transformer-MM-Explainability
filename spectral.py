@@ -618,12 +618,15 @@ def spectral_stuff():
     ]
 
 
-    URL = '../../data/root/val2014/{}.jpg'.format(image_ids[1])
+    URL = '../../data/root/val2014/{}.jpg'.format(image_ids[-11])
     # URL = image_ids[-1]
     # URL = 'giraffe.jpg'
-    qs = test_questions_for_images[1]
-    R_t_t, R_t_i = lrp.generate_eigen_cam((URL, qs), how_many = 5, use_lrp=False, 
+    qs = test_questions_for_images[-11]
+    R_t_t, R_t_i = lrp.generate_ours_dsm_grad((URL, qs), how_many = 5, use_lrp=False, 
                                          normalize_self_attention=True, method_name="dsm")
+
+    # R_t_t, R_t_i = lrp.generate_ours_dsm((URL, qs), how_many = 5, use_lrp=False, 
+    #                                      normalize_self_attention=True, method_name="dsm")
     text_scores = R_t_t
     image_scores = R_t_i
 
@@ -633,27 +636,29 @@ def spectral_stuff():
     # for i in range(len(image_scores)):    
 
         # text_map(model_lrp, text_scores)
-    test_save_image_vis(model_lrp, URL, image_scores, "Spectral", '3')
+    test_save_image_vis(model_lrp, URL, image_scores, "(Spectral + Grad)", '3')
+    # test_save_image_vis(model_lrp, URL, image_scores, "Spectral", '3')
+
     # test_save_image_vis(model_lrp, URL, image_scores * -1, "-")
         
 
-    text_map(model_lrp, text_scores, '3')
+    text_map(model_lrp, text_scores, '4')
 
 
 
-    # save_image_vis(model_lrp, URL, image_scores)
+    save_image_vis(model_lrp, URL, image_scores)
     orig_image = Image.open(model_lrp.image_file_path)
     # plt.imshow(text_scores.unsqueeze(dim = 0).numpy())
 
-    # fig, axs = plt.subplots(ncols=3, figsize=(20, 5))
-    # axs[0].imshow(orig_image)
-    # axs[0].axis('off')
-    # axs[0].set_title('original')
+    fig, axs = plt.subplots(ncols=2, figsize=(20, 5))
+    axs[0].imshow(orig_image)
+    axs[0].axis('off')
+    axs[0].set_title('original')
 
-    # masked_image = Image.open('lxmert/lxmert/experiments/paper/new.jpg')
-    # axs[1].imshow(masked_image)
-    # axs[1].axis('off')
-    # axs[1].set_title('masked')
+    masked_image = Image.open('lxmert/lxmert/experiments/paper/new.jpg')
+    axs[1].imshow(masked_image)
+    axs[1].axis('off')
+    axs[1].set_title('masked')
 
     # axs[2].imshow(R_t_i.unsqueeze(dim = 0).numpy())
     # axs[2].set_xlabel("object number")

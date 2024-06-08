@@ -6,7 +6,8 @@ import os
 import warnings
 from ast import literal_eval
 
-import demjson
+# import demjson
+import demjson3 as demjson
 import torch
 from VisualBERT.mmf.common.registry import registry
 from VisualBERT.mmf.utils.env import import_user_module
