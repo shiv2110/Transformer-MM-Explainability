@@ -555,11 +555,15 @@ class GeneratorOurs:
                 else:
                     grad = blk[blk_count].lang_self_att.self.get_attn_gradients().detach()
                     grad = grad[:, :, 1:-1, 1:-1]
-                    grad = grad.reshape(-1, grad.shape[-2], grad.shape[-1])
-                    grad = grad.clamp(min=0).mean(dim=0)
+                    cam = blk[blk_count].lang_self_att.self.get_attn_cam().detach()[:, :, 1:-1, 1:-1]
+                    cam = avg_heads(cam, grad)
+
+
+                    # grad = grad.reshape(-1, grad.shape[-2], grad.shape[-1])
+                    # grad = grad.clamp(min=0).mean(dim=0)
                     # print(f"GRAD SHAPE: {grad.size()}")
                     fev = fev.to(model.device)
-                    fev = grad @ fev.unsqueeze(1)
+                    fev = cam @ fev.unsqueeze(1)
                     fev = fev[:, 0]
                     blk_count += 1
                 # print()
