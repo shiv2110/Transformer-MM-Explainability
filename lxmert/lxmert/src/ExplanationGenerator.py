@@ -534,7 +534,7 @@ class GeneratorOurs:
                 fev = eigenvectors[fev_idx]
                 # k1, k2 = fev.topk(k = 1).indices[0], nfev.topk(k = 1).indices[0]
 
-                # fev = torch.abs(fev) #baka
+                fev = torch.abs(fev) #baka
  
                     # fev = torch.cat( ( torch.zeros(1), fev ) )
 
@@ -542,11 +542,14 @@ class GeneratorOurs:
                 if modality == "image":
                     grad = blk[blk_count].visn_self_att.self.get_attn_gradients().detach()
                     # print()
-                    grad = grad.reshape(-1, grad.shape[-2], grad.shape[-1])
-                    grad = grad.clamp(min=0).mean(dim=0)
+                    cam = blk[blk_count].visn_self_att.self.get_attn().detach()
+                    cam = avg_heads(cam, grad)
+
+                    # grad = grad.reshape(-1, grad.shape[-2], grad.shape[-1])
+                    # grad = grad.clamp(min=0).mean(dim=0)
                     # print(f"GRAD SHAPE: {grad.size()}")
                     fev = fev.to(model.device)
-                    fev = grad @ fev.unsqueeze(1)
+                    fev = cam @ fev.unsqueeze(1)
                     fev = fev[:, 0]
                     blk_count += 1
                 else:
@@ -872,8 +875,8 @@ class GeneratorBaselines:
         one_hot[0, index] = 1
         one_hot_vector = one_hot
         one_hot = torch.from_numpy(one_hot).requires_grad_(True)
-        one_hot = torch.sum(one_hot.cuda() * output)
-        # one_hot = torch.sum(one_hot * output)
+        # one_hot = torch.sum(one_hot.cuda() * output)
+        one_hot = torch.sum(one_hot * output)
 
         model.zero_grad()
         one_hot.backward(retain_graph=True)

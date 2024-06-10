@@ -200,7 +200,7 @@ class ResidualAttentionBlock(nn.Module):
         x = x + self.mlp(self.ln_2(x))
         # print(f"here now: {x.shape}")
         # if x.size()[-2] == 768:
-        self.feats = x
+        self.feats = x.detach()
         return x
 
 
