@@ -624,10 +624,10 @@ def spectral_stuff():
     ]
 
 
-    URL = '../../data/root/val2014/{}.jpg'.format(image_ids[1])
+    URL = '../../data/root/val2014/{}.jpg'.format(image_ids[2])
     # URL = image_ids[-1]
     # URL = 'giraffe.jpg'
-    qs = test_questions_for_images[1]
+    qs = test_questions_for_images[2]
     R_t_t, R_t_i = lrp.generate_ours_dsm_grad((URL, qs), how_many = 5, use_lrp=False, 
                                          normalize_self_attention=True, method_name="dsm")
     

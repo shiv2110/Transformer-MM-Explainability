@@ -759,7 +759,6 @@ class LxmertXLayer(nn.Module):
             visual_attention_mask,
         )
 
-        # print(f"{type(lang_att_output)}")
         ###################### FC layers baka ###################
         lang_output, visual_output = self.output_fc(lang_att_output, visual_att_output)
         return (

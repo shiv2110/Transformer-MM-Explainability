@@ -543,12 +543,17 @@ class GeneratorOurs:
                     grad = blk[blk_count].visn_self_att.self.get_attn_gradients().detach()
                     # print()
                     cam = blk[blk_count].visn_self_att.self.get_attn().detach()
-                    cam = avg_heads(cam, grad)
+                    # cam = avg_heads(cam, grad)
 
-                    # grad = grad.reshape(-1, grad.shape[-2], grad.shape[-1])
-                    # grad = grad.clamp(min=0).mean(dim=0)
+                    cam = cam.reshape(-1, cam.shape[-2], cam.shape[-1])
+                    cam = cam.clamp(min=0).mean(dim=0)
+
+                    grad = grad.reshape(-1, grad.shape[-2], grad.shape[-1])
+                    grad = grad.clamp(min=0).mean(dim=0)
                     # print(f"GRAD SHAPE: {grad.size()}")
+
                     fev = fev.to(model.device)
+                    cam = grad @ cam
                     fev = cam @ fev.unsqueeze(1)
                     fev = fev[:, 0]
                     blk_count += 1
@@ -556,13 +561,15 @@ class GeneratorOurs:
                     grad = blk[blk_count].lang_self_att.self.get_attn_gradients().detach()
                     grad = grad[:, :, 1:-1, 1:-1]
                     cam = blk[blk_count].lang_self_att.self.get_attn().detach()[:, :, 1:-1, 1:-1]
-                    cam = avg_heads(cam, grad)
+                    # cam = avg_heads(cam, grad)
+                    cam = cam.reshape(-1, cam.shape[-2], cam.shape[-1])
+                    cam = cam.clamp(min=0).mean(dim=0)
 
-
-                    # grad = grad.reshape(-1, grad.shape[-2], grad.shape[-1])
-                    # grad = grad.clamp(min=0).mean(dim=0)
+                    grad = grad.reshape(-1, grad.shape[-2], grad.shape[-1])
+                    grad = grad.clamp(min=0).mean(dim=0)
                     # print(f"GRAD SHAPE: {grad.size()}")
                     fev = fev.to(model.device)
+                    cam = grad @ cam
                     fev = cam @ fev.unsqueeze(1)
                     fev = fev[:, 0]
                     blk_count += 1
