@@ -456,8 +456,8 @@ class GeneratorOurs:
         one_hot[0, index] = 1
         one_hot_vector = one_hot
         one_hot = torch.from_numpy(one_hot).requires_grad_(True)
-        # one_hot = torch.sum(one_hot * output) #baka
-        one_hot = torch.sum(one_hot.cuda() * output) #baka
+        one_hot = torch.sum(one_hot * output) #baka
+        # one_hot = torch.sum(one_hot.cuda() * output) #baka
 
         model.zero_grad()
         one_hot.backward(retain_graph=True)
@@ -555,7 +555,7 @@ class GeneratorOurs:
                 else:
                     grad = blk[blk_count].lang_self_att.self.get_attn_gradients().detach()
                     grad = grad[:, :, 1:-1, 1:-1]
-                    cam = blk[blk_count].lang_self_att.self.get_attn_cam().detach()[:, :, 1:-1, 1:-1]
+                    cam = blk[blk_count].lang_self_att.self.get_attn().detach()[:, :, 1:-1, 1:-1]
                     cam = avg_heads(cam, grad)
 
 
