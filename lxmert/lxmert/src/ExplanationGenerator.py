@@ -11,7 +11,7 @@ from pymatting.util.util import row_sum
 from scipy.sparse import diags
 from scipy.stats import skew
 from .eigenshuffle import eigenshuffle
-
+import math
 # from sentence_transformers import SentenceTransformer
 # from torch.nn import CosineSimilarity as CosSim
 
@@ -34,6 +34,16 @@ def avg_heads(cam, grad):
     grad = grad.reshape(-1, grad.shape[-2], grad.shape[-1])
     cam = grad * cam
     cam = cam.clamp(min=0).mean(dim=0)
+    return cam
+
+def avg_heads_new(cam, grad):
+    cam = cam.reshape(-1, cam.shape[-2], cam.shape[-1])
+    grad = grad.reshape(-1, grad.shape[-2], grad.shape[-1])
+    cam = cam.clamp(min=0).mean(dim=0)
+    grad = grad.clamp(min=0).mean(dim=0)
+
+    cam = grad @ cam.T
+    # cam = cam.clamp(min=0).mean(dim=0)
     return cam
 
 # rules 6 + 7 from paper
@@ -433,32 +443,81 @@ class GeneratorOurs:
 
 
 
+    def get_diagonal (self, W):
+        D = row_sum(W)
+        D[D < 1e-12] = 1.0  # Prevent division by zero.
+        D = diags(D)
+        return D
+
+
+    def get_fev (self, feats, modality, how_many = None):
+        if feats.size(0) == 1:
+            feats = feats.detach().squeeze()
+
+
+        if modality == "image":
+            n_image_feats = feats.size(0)
+            val = int( math.sqrt(n_image_feats) )
+            if val * val == n_image_feats:
+                feats = F.normalize(feats, p = 2, dim = -1)
+            elif val * val + 1 == n_image_feats:
+                feats = F.normalize(feats, p = 2, dim = -1)[1:]
+            else:
+                print(f"Invalid number of features detected: {n_image_feats}")
+
+        else:
+            feats = F.normalize(feats, p = 2, dim = -1)[1:-1]
+
+        W_feat = (feats @ feats.T)
+        W_feat = (W_feat * (W_feat > 0))
+        W_feat = W_feat / W_feat.max() 
+
+        W_feat = W_feat.detach().cpu().numpy()
+
+        
+        D = np.array(self.get_diagonal(W_feat).todense())
+
+        L = D - W_feat
+
+        L_shape = L.shape[0]
+        if how_many >= L_shape - 1: #add this in meter
+            how_many = L_shape - 2
+
+        try:
+            eigenvalues, eigenvectors = eigs(L, k = how_many, which = 'LM', sigma = -0.5, M = D)
+        except:
+            try:
+                eigenvalues, eigenvectors = eigs(L, k = how_many, which = 'LM', sigma = -0.5)
+            except:
+                eigenvalues, eigenvectors = eigs(L, k = how_many, which = 'LM')
+        eigenvalues, eigenvectors = torch.from_numpy(eigenvalues), torch.from_numpy(eigenvectors.T).float()
+        
+        n_tuple = torch.kthvalue(eigenvalues.real, 2)
+        fev_idx = n_tuple.indices
+        fev = eigenvectors[fev_idx]
+
+        if modality == 'text':
+            fev = torch.cat( ( torch.zeros(1), fev, torch.zeros(1)  ) )
+
+        return torch.abs(fev)
+
+
+    
     def generate_ours_dsm_grad(self, input, how_many = 5, index=None, use_lrp=True, normalize_self_attention=True, apply_self_in_rule_10=True, 
                           method_name="dsm"):
         self.use_lrp = use_lrp
         self.normalize_self_attention = normalize_self_attention
         self.apply_self_in_rule_10 = apply_self_in_rule_10
 
-        # self.cross_attn_viz_feat = []
-        # self.cross_attn_lg_feat = []
-        # self.attn_viz_feats = []
-        # self.cross_attn_viz_feat_list = []
-        # self.cross_attn_lg_feat_list = []
-
-
-        # print(len(self.cross_attn_viz_feat))
-        # kwargs = {"alpha": 1}
+        
         output = self.model_usage.forward(input).question_answering_score
-        # print(f"{output.last_hidden_state.shape}")
         model = self.model_usage.model
-
         one_hot = np.zeros((1, output.size()[-1]), dtype=np.float32)
         one_hot[0, index] = 1
         one_hot_vector = one_hot
         one_hot = torch.from_numpy(one_hot).requires_grad_(True)
         # one_hot = torch.sum(one_hot * output) #baka
         one_hot = torch.sum(one_hot.cuda() * output) #baka
-
         model.zero_grad()
         one_hot.backward(retain_graph=True)
 
@@ -472,11 +531,12 @@ class GeneratorOurs:
         # print(f"n-layers: {len(model.lxmert.encoder.visual_feats_list_x)}")
         
         # image_feats = model.lxmert.encoder.visual_feats_list_x[-2].detach().clone()
-        image_flen = len(model.lxmert.encoder.visual_feats_list_x)
-        text_flen = len(model.lxmert.encoder.lang_feats_list_x)
+        image_flen1 = len(model.lxmert.encoder.visual_feats_list_x)
+        text_flen1 = len(model.lxmert.encoder.lang_feats_list_x)
+        image_flen = len(model.lxmert.encoder.visual_feats_list_self)
+        text_flen = len(model.lxmert.encoder.lang_feats_list_self)
         # text_feats = model.lxmert.encoder.lang_feats_list_x[-2].detach().clone()
 
-        blk = model.lxmert.encoder.x_layers
         # feats = F.normalize(feats, p = 2, dim = -1)
         # image_feats = image_feats.squeeze().cpu()
         # text_feats = text_feats.squeeze().cpu()[1:-1]
@@ -486,63 +546,24 @@ class GeneratorOurs:
         def get_eigs (feats_list, flen, modality, how_many):
             blk_count = 0
             layer_wise_fevs = []
-            layer_wise_eigenvalues = []
+            visual_blk = model.lxmert.encoder.r_layers
+            lang_blk = model.lxmert.encoder.layer
+
+
+
             for i in range(flen):
                 # feats = F.normalize(feats_list[i].detach().clone().squeeze().cpu(), p = 2, dim = -1)
                 # print(f"Features' shape: {feats.shape}")
-                if modality == "image":
-                    feats = F.normalize(feats_list[i].detach().clone().squeeze().cpu(), p = 2, dim = -1)
-                else:
-                    feats = F.normalize(feats_list[i].detach().clone().squeeze().cpu(), p = 2, dim = -1)[1:-1]
-                    # feats1 = feats
-
-                # skew_vec = []
-                W_feat = (feats @ feats.T)
-                W_feat = (W_feat * (W_feat > 0))
-                W_feat = W_feat / W_feat.max() 
-
-                W_feat = W_feat.cpu().numpy()
-
-
-                def get_diagonal (W):
-                    D = row_sum(W)
-                    D[D < 1e-12] = 1.0  # Prevent division by zero.
-                    D = diags(D)
-                    return D
-                
-                D = np.array(get_diagonal(W_feat).todense())
-
-                L = D - W_feat
-                # L[L < 0] = 0
-                L_shape = L.shape[0]
-                if how_many >= L_shape - 1:
-                    how_many = L_shape - 2
-
-                try:
-                    eigenvalues, eigenvectors = eigs(L, k = how_many, which = 'LM', sigma = -0.5, M = D)
-                except:
-                    try:
-                        eigenvalues, eigenvectors = eigs(L, k = how_many, which = 'LM', sigma = -0.5)
-                    except:
-                        eigenvalues, eigenvectors = eigs(L, k = how_many, which = 'LM')
-                eigenvalues, eigenvectors = torch.from_numpy(eigenvalues), torch.from_numpy(eigenvectors.T).float()
-                
-
-                n_tuple = torch.kthvalue(eigenvalues.real, 2)
-                # print(f"N_Tuple: {n_tuple.indices}")
-                fev_idx = n_tuple.indices
-                fev = eigenvectors[fev_idx]
-                # k1, k2 = fev.topk(k = 1).indices[0], nfev.topk(k = 1).indices[0]
-
-                fev = torch.abs(fev) #baka
- 
+                fev = self.get_fev(feats_list[i], modality, how_many)
+                if modality == "text":
+                    fev = fev[1:-1]
                     # fev = torch.cat( ( torch.zeros(1), fev ) )
 
                 # layer_wise_fevs.append( eigenvalues[fev_idx].real * fev )
                 if modality == "image":
-                    grad = blk[blk_count].visn_self_att.self.get_attn_gradients().detach()
+                    grad = visual_blk[blk_count].attention.self.get_attn_gradients().detach()
                     # print()
-                    cam = blk[blk_count].visn_self_att.self.get_attn().detach()
+                    cam = visual_blk[blk_count].attention.self.get_attn().detach()
                     # cam = avg_heads(cam, grad)
 
                     cam = cam.reshape(-1, cam.shape[-2], cam.shape[-1])
@@ -554,13 +575,14 @@ class GeneratorOurs:
 
                     fev = fev.to(model.device)
                     cam = grad @ cam
+
                     fev = cam @ fev.unsqueeze(1)
                     fev = fev[:, 0]
                     blk_count += 1
                 else:
-                    grad = blk[blk_count].lang_self_att.self.get_attn_gradients().detach()
+                    grad = lang_blk[blk_count].attention.self.get_attn_gradients().detach()
                     grad = grad[:, :, 1:-1, 1:-1]
-                    cam = blk[blk_count].lang_self_att.self.get_attn().detach()[:, :, 1:-1, 1:-1]
+                    cam = lang_blk[blk_count].attention.self.get_attn().detach()[:, :, 1:-1, 1:-1]
                     # cam = avg_heads(cam, grad)
                     cam = cam.reshape(-1, cam.shape[-2], cam.shape[-1])
                     cam = cam.clamp(min=0).mean(dim=0)
@@ -573,33 +595,95 @@ class GeneratorOurs:
                     fev = cam @ fev.unsqueeze(1)
                     fev = fev[:, 0]
                     blk_count += 1
-                # print()
-                # print(f"FEV SHAPE: {fev.size()}")
-                # print(f"BLK: " + modality + ' count = ' + str(blk_count))
-                # fev = torch.abs(fev)
-                # fev = (fev - torch.min(fev))/(torch.max(fev) - torch.min(fev))
-                if modality == 'text':
-                    # print(grad)
                     fev = torch.cat( ( torch.zeros(1).to(model.device), fev, torch.zeros(1).to(model.device)  ) )
-                    # fev = fev.to(model.device)
+
 
                 layer_wise_fevs.append( torch.abs(fev) )
-                layer_wise_eigenvalues.append(eigenvalues)
+      
+            return layer_wise_fevs
+    
+
+
+        def get_eigs1 (feats_list, flen, modality, how_many):
+            # blk_count = 0
+            layer_wise_fevs = []
+            blk = model.lxmert.encoder.x_layers
+
+
+            for i in range(flen):
+                # feats = F.normalize(feats_list[i].detach().clone().squeeze().cpu(), p = 2, dim = -1)
+                # print(f"Features' shape: {feats.shape}")
+                fev = self.get_fev(feats_list[i], modality, how_many)
+                if modality == "text":
+                    fev = fev[1:-1]
+
+                if modality == "image":
+                    cam_i_t = blk[i].visual_attention_copy.att.get_attn().detach()[:, :, :, 1:-1]
+                    grad_i_t = blk[i].visual_attention_copy.att.get_attn_gradients().detach()[:, :, :, 1:-1]
+                    cam_i_t = avg_heads_new(cam_i_t, grad_i_t)
+
+                    grad = blk[i].visn_self_att.self.get_attn_gradients().detach()
+                    cam = blk[i].visn_self_att.self.get_attn().detach()
+                    cam = avg_heads_new(cam, grad)
+
+                    cam = cam_i_t + cam
+   
+                    fev = fev.to(model.device)
+
+                    fev = cam @ fev.unsqueeze(1)
+                    fev = fev[:, 0]
+
+                else:
+
+                    cam_t_i = blk[i].visual_attention.att.get_attn().detach()[:, :, 1:-1, :]
+                    # print(f"CAM T I : {cam_t_i.size()}")
+
+                    grad_t_i = blk[i].visual_attention.att.get_attn_gradients().detach()[:, :, 1:-1, :]
+                    cam_t_i = avg_heads_new(cam_t_i, grad_t_i)
+                    # print(f"CAM T I : {cam_t_i.size()}")
+
+
+                    grad = blk[i].lang_self_att.self.get_attn_gradients().detach()[:, :, 1:-1, 1:-1]
+                    cam = blk[i].lang_self_att.self.get_attn().detach()[:, :, 1:-1, 1:-1]
+                    cam = avg_heads_new(cam, grad)
+                    # cam = cam.reshape(-1, cam.shape[-2], cam.shape[-1])
+                    # cam = cam.clamp(min=0).mean(dim=0)
+
+                    # grad = grad.reshape(-1, grad.shape[-2], grad.shape[-1])
+                    # grad = grad.clamp(min=0).mean(dim=0)
+                    # print(f"GRAD SHAPE: {grad.size()}")
+                    cam = cam_t_i + cam
+                    # print(f"CAM SIZE BAKA : {cam.size()}")
+                    fev = fev.to(model.device)
+        
+                    fev = cam @ fev.unsqueeze(1)
+                    fev = fev[:, 0]
+
+                    fev = torch.cat( ( torch.zeros(1).to(model.device), fev, torch.zeros(1).to(model.device)  ) )
+
+
+                layer_wise_fevs.append( torch.abs(fev) )
       
             return layer_wise_fevs
 
         
-        image_fevs = get_eigs(model.lxmert.encoder.visual_feats_list_x, 
-                                                #  model.lxmert.encoder.lang_feats_list_x,
-                                                 image_flen - 1, "image", how_many)
+        image_fevs = get_eigs(model.lxmert.encoder.visual_feats_list_self, 
+                                                 image_flen, "image", how_many)
         
-        lang_fevs = get_eigs(model.lxmert.encoder.lang_feats_list_x, 
+        lang_fevs = get_eigs(model.lxmert.encoder.lang_feats_list_self, 
                                                text_flen, "text", how_many)
 
 
+        image_fevs1 = get_eigs1(model.lxmert.encoder.visual_feats_list_x, 
+                                                 image_flen1 - 1, "image", how_many)
+        
+        lang_fevs1 = get_eigs1(model.lxmert.encoder.lang_feats_list_x, 
+                                               text_flen1, "text", how_many)
+
+
         # return lang_fevs[-2], image_fevs[-2], eigenvalues_image, eigenvalues_text
-        new_fev = torch.stack(image_fevs, dim=0).sum(dim=0)
-        new_fev1 = torch.stack(lang_fevs, dim=0).sum(dim=0)
+        new_fev = torch.stack(image_fevs + image_fevs1, dim=0).sum(dim=0)
+        new_fev1 = torch.stack(lang_fevs + lang_fevs1, dim=0).sum(dim=0)
         # new_fev1 = (new_fev1 - torch.min(new_fev1))/(torch.max(new_fev1) - torch.min(new_fev1))
         # new_fev = (new_fev - torch.min(new_fev))/(torch.max(new_fev) - torch.min(new_fev))
 

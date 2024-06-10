@@ -851,6 +851,9 @@ class LxmertEncoder(nn.Module):
         # self.visual_feats_list_r = []
         self.visual_feats_list_x = []
         self.lang_feats_list_x = []
+        self.visual_feats_list_self = []
+        self.lang_feats_list_self = []
+
         # self.lang_feats_list_r = []
 
         vision_hidden_states = ()
@@ -869,7 +872,7 @@ class LxmertEncoder(nn.Module):
             if language_attentions is not None:
                 language_attentions = language_attentions + (l_outputs[1],)
 
-            # self.lang_feats_list_x.append(lang_feats.detach().clone()) #baka
+            self.lang_feats_list_self.append(lang_feats.detach().clone()) #baka
             
             
             ########################## here ###############################
@@ -882,7 +885,7 @@ class LxmertEncoder(nn.Module):
             if vision_attentions is not None:
                 vision_attentions = vision_attentions + (v_outputs[1],)
             
-            # self.visual_feats_list_x.append(visual_feats.detach().clone()) #baka
+            self.visual_feats_list_self.append(visual_feats.detach().clone()) #baka
 
 
         # Run cross-modality layers
