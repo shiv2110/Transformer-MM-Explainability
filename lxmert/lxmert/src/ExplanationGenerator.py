@@ -438,8 +438,8 @@ class GeneratorOurs:
                 # fev = torch.cat( ( torch.zeros(1), fev ) )
 
             # return torch.abs(fev)
-            # print(fev)
-            return self.handle_fev(fev)
+            return fev
+            # return self.handle_fev(fev)
 
 
         

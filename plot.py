@@ -43,7 +43,9 @@ rollout_t_neg = [66.51, 48.33, 30.1, 14.07, 9.46, 7.84, 4.92, 4.37, 4.37]
 
 
 # MY OG DSM METHOD
-dsm_i_pos = [66.51, 58.25, 53.97, 49.16, 47.73, 45.26, 43.04, 38.63, 39.79]
+# dsm_i_pos = [66.51, 58.25, 53.97, 49.16, 47.73, 45.26, 43.04, 38.63, 39.79]
+
+dsm_i_pos = [66.62, 57.84, 51.63, 46.89, 46.15, 45.03, 43.29, 38.93, 39.79]
 dsm_i_neg = [66.62, 65.59, 63.55, 55.46, 52.78, 48.48, 44.48, 38.3, 39.79]
 dsm_t_pos = [66.51, 40.22, 26.51, 14.2, 10.95, 8.43, 4.85, 4.37, 4.37]
 dsm_t_neg = [66.62, 55.38, 46.96, 27.44, 18.53, 14.16, 5.56, 4.56, 4.52]
@@ -62,27 +64,27 @@ dsm_grad_cam_t_pos = [66.62, 33.28, 19.78, 8.71, 6.68, 6.17, 4.72, 4.55, 4.52]
 
 
 
-# plt.title('Positive perturbation test on image modality')
-# plt.plot(x, dsm_i_pos)
-# plt.plot(x, dsm_grad_i_pos)
-# plt.plot(x, hcrm_i_pos)
-# plt.plot(x, transformer_attr_i_pos)
-# plt.plot(x, raw_attn_i_pos)
-# plt.plot(x, partial_lrp_i_pos)
-# plt.plot(x, gradcam_i_pos)
-# plt.plot(x, rollout_i_pos)
+plt.title('Positive perturbation test on image modality')
+plt.plot(x, dsm_i_pos)
+plt.plot(x, dsm_grad_i_pos)
+plt.plot(x, hcrm_i_pos)
+plt.plot(x, transformer_attr_i_pos)
+plt.plot(x, raw_attn_i_pos)
+plt.plot(x, partial_lrp_i_pos)
+plt.plot(x, gradcam_i_pos)
+plt.plot(x, rollout_i_pos)
 
 
 
-# plt.legend(['DSM (' + str(round(sum(dsm_i_pos)/9, 2)) + ')', 
-#             'DSM + Grad (' + str(round(sum(dsm_grad_i_pos)/9, 2)) + ')', 
-#             'Relevance maps (' + str(round(sum(hcrm_i_pos)/9, 2)) + ')', 
-#             'Transformer attribution (' + str(round(sum(transformer_attr_i_pos)/9, 2)) + ')', 
-#             'Raw attention (' + str(round(sum(raw_attn_i_pos)/9, 2)) + ')', 
-#             'LRP (' + str(round(sum(partial_lrp_i_pos)/9, 2)) + ')',
-#             'GradCAM (' + str(round(sum(gradcam_i_pos)/9, 2)) + ')', 
-#             'Rollout (' + str(round(sum(rollout_i_pos)/9, 2)) + ')'
-#           ]) 
+plt.legend(['DSM (' + str(round(sum(dsm_i_pos)/9, 2)) + ')', 
+            'DSM + Grad (' + str(round(sum(dsm_grad_i_pos)/9, 2)) + ')', 
+            'Relevance maps (' + str(round(sum(hcrm_i_pos)/9, 2)) + ')', 
+            'Transformer attribution (' + str(round(sum(transformer_attr_i_pos)/9, 2)) + ')', 
+            'Raw attention (' + str(round(sum(raw_attn_i_pos)/9, 2)) + ')', 
+            'LRP (' + str(round(sum(partial_lrp_i_pos)/9, 2)) + ')',
+            'GradCAM (' + str(round(sum(gradcam_i_pos)/9, 2)) + ')', 
+            'Rollout (' + str(round(sum(rollout_i_pos)/9, 2)) + ')'
+          ]) 
 
 
 # plt.title('Negative perturbation test on image modality')
@@ -109,27 +111,27 @@ dsm_grad_cam_t_pos = [66.62, 33.28, 19.78, 8.71, 6.68, 6.17, 4.72, 4.55, 4.52]
 
 
 
-plt.title('Positive perturbation test on text modality')
-plt.plot(x, dsm_t_pos)
-plt.plot(x, dsm_grad_t_pos)
-plt.plot(x, hcrm_t_pos)
-plt.plot(x, transformer_attr_t_pos)
-plt.plot(x, raw_attn_t_pos)
-plt.plot(x, partial_lrp_t_pos)
-plt.plot(x, gradcam_t_pos)
-plt.plot(x, rollout_t_pos)
+# plt.title('Positive perturbation test on text modality')
+# plt.plot(x, dsm_t_pos)
+# plt.plot(x, dsm_grad_t_pos)
+# plt.plot(x, hcrm_t_pos)
+# plt.plot(x, transformer_attr_t_pos)
+# plt.plot(x, raw_attn_t_pos)
+# plt.plot(x, partial_lrp_t_pos)
+# plt.plot(x, gradcam_t_pos)
+# plt.plot(x, rollout_t_pos)
 
 
 
-plt.legend([ 'DSM (' + str(round(sum(dsm_t_pos)/9, 2)) + ')', 
-            'DSM + Grad (' + str(round(sum(dsm_grad_t_pos)/9, 2)) + ')', 
-            'Relevance maps (' + str(round(sum(hcrm_t_pos)/9, 2)) + ')', 
-            'Transformer attribution (' + str(round(sum(transformer_attr_t_pos)/9, 2)) + ')', 
-            'Raw attention (' + str(round(sum(raw_attn_t_pos)/9, 2)) + ')', 
-            'LRP (' + str(round(sum(partial_lrp_t_pos)/9, 2)) + ')',
-            'GradCAM (' + str(round(sum(gradcam_t_pos)/9, 2)) + ')', 
-            'Rollout (' + str(round(sum(rollout_t_pos)/9, 2)) + ')'
-          ]) 
+# plt.legend([ 'DSM (' + str(round(sum(dsm_t_pos)/9, 2)) + ')', 
+#             'DSM + Grad (' + str(round(sum(dsm_grad_t_pos)/9, 2)) + ')', 
+#             'Relevance maps (' + str(round(sum(hcrm_t_pos)/9, 2)) + ')', 
+#             'Transformer attribution (' + str(round(sum(transformer_attr_t_pos)/9, 2)) + ')', 
+#             'Raw attention (' + str(round(sum(raw_attn_t_pos)/9, 2)) + ')', 
+#             'LRP (' + str(round(sum(partial_lrp_t_pos)/9, 2)) + ')',
+#             'GradCAM (' + str(round(sum(gradcam_t_pos)/9, 2)) + ')', 
+#             'Rollout (' + str(round(sum(rollout_t_pos)/9, 2)) + ')'
+#           ]) 
 
 
 # plt.title('Negative perturbation test on text modality')
