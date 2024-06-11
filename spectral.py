@@ -624,16 +624,15 @@ def spectral_stuff():
     ]
 
 
-    URL = '../../data/root/val2014/{}.jpg'.format(image_ids[3])
+    URL = '../../data/root/val2014/{}.jpg'.format(image_ids[2])
     # URL = image_ids[-1]
     # URL = 'giraffe.jpg'
-    qs = test_questions_for_images[3]
-    R_t_t, R_t_i = lrp.generate_ours_dsm_grad((URL, qs), how_many = 5)
+    qs = test_questions_for_images[2]
+    # R_t_t, R_t_i = lrp.generate_ours_dsm_grad((URL, qs), how_many = 5)
     
     # R_t_t, R_t_i = baselines.generate_transformer_attr((URL, qs))
 
-    # R_t_t, R_t_i = lrp.generate_ours_dsm((URL, qs), how_many = 5, use_lrp=False, 
-                                        #  normalize_self_attention=True, method_name="dsm")
+    R_t_t, R_t_i = lrp.generate_ours_dsm_grad_cam((URL, qs), how_many = 5)
     text_scores = R_t_t
     image_scores = R_t_i
 
@@ -643,7 +642,9 @@ def spectral_stuff():
     # for i in range(len(image_scores)):    
 
         # text_map(model_lrp, text_scores)
-    test_save_image_vis(model_lrp, URL, image_scores, "(Spectral + Grad)", '3')
+    # test_save_image_vis(model_lrp, URL, image_scores, "(Spectral + Grad)", '3')
+    test_save_image_vis(model_lrp, URL, image_scores, "(Spectral + Grad + Attn)", '3')
+
     # test_save_image_vis(model_lrp, URL, image_scores, "Spectral", '3')
 
     # test_save_image_vis(model_lrp, URL, image_scores * -1, "-")

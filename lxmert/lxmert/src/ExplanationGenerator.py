@@ -349,12 +349,12 @@ class GeneratorOurs:
         # return self.R_t_i.T, self.R_i_t.T #baka
 
 
-    def handle_fev (self, fev):
-        temp = torch.abs(fev)
-        idx = torch.argmax(temp)
-        if fev[idx] < 0:
-            return fev * -1
-        return fev
+    # def handle_fev (self, fev):
+    #     temp = torch.abs(fev)
+    #     idx = torch.argmax(temp)
+    #     if fev[idx] < 0:
+    #         return fev * -1
+    #     return fev
 
 
     def generate_ours_dsm(self, input, how_many = 5, index=None, use_lrp=True, normalize_self_attention=True, apply_self_in_rule_10=True, 
@@ -427,13 +427,10 @@ class GeneratorOurs:
             fev = eigenvectors[fev_idx]
 
 
-            # return torch.abs(fev)
-            # return fev
-            fev = self.handle_fev(fev)
+            fev = torch.abs(fev)
             if modality == 'text':
-                fev = torch.abs(fev)
-                fev = torch.cat( ( torch.zeros(1), fev, torch.zeros(1)  ) )
-                # fev[0], fev[] = -1, -1
+                fev = torch.cat( ( torch.zeros(1), fev, torch.zeros(1) ) )
+
             return fev
 
 
@@ -501,16 +498,11 @@ class GeneratorOurs:
         n_tuple = torch.kthvalue(eigenvalues.real, 2)
         fev_idx = n_tuple.indices
         fev = eigenvectors[fev_idx]
-        # fev = eigenvectors[1]
 
-        # return torch.abs(fev)
-        # return fev 
-        fev = self.handle_fev(fev)
         if modality == 'text':
-            fev = torch.abs(fev)
             fev = torch.cat( ( torch.zeros(1), fev, torch.zeros(1) ) )
-            # fev[0], fev[-1] = -1, -1
-        return fev
+ 
+        return torch.abs(fev)
 
 
 
@@ -523,8 +515,8 @@ class GeneratorOurs:
         one_hot[0, index] = 1
         one_hot_vector = one_hot
         one_hot = torch.from_numpy(one_hot).requires_grad_(True)
-        # one_hot = torch.sum(one_hot * output) #baka
-        one_hot = torch.sum(one_hot.cuda() * output) #baka
+        one_hot = torch.sum(one_hot * output) #baka
+        # one_hot = torch.sum(one_hot.cuda() * output) #baka
         model.zero_grad()
         one_hot.backward(retain_graph=True)
 
@@ -566,8 +558,8 @@ class GeneratorOurs:
                     # fev[0], fev[-1] = -1, -1
 
 
-                # layer_wise_fevs.append( torch.abs(fev) )
-                layer_wise_fevs.append( self.handle_fev(fev) )
+                layer_wise_fevs.append( torch.abs(fev) )
+                # layer_wise_fevs.append( self.handle_fev(fev) )
 
                 # layer_wise_fevs.append( self.handle_fev(fev) if modality == "image" else torch.abs(fev) )
 
@@ -601,8 +593,8 @@ class GeneratorOurs:
         one_hot[0, index] = 1
         one_hot_vector = one_hot
         one_hot = torch.from_numpy(one_hot).requires_grad_(True)
-        one_hot = torch.sum(one_hot * output) #baka
-        # one_hot = torch.sum(one_hot.cuda() * output) #baka
+        # one_hot = torch.sum(one_hot * output) #baka
+        one_hot = torch.sum(one_hot.cuda() * output) #baka
         model.zero_grad()
         one_hot.backward(retain_graph=True)
 
@@ -627,19 +619,10 @@ class GeneratorOurs:
                 # layer_wise_fevs.append( eigenvalues[fev_idx].real * fev )
                 if modality == "image":
                     grad = blk[i].visn_self_att.self.get_attn_gradients().detach()
-                    # print()
                     cam = blk[i].visn_self_att.self.get_attn().detach()
                     cam = avg_heads(cam, grad)
 
-                    # cam = cam.reshape(-1, cam.shape[-2], cam.shape[-1])
-                    # cam = cam.clamp(min=0).mean(dim=0)
-
-                    # grad = grad.reshape(-1, grad.shape[-2], grad.shape[-1])
-                    # grad = grad.clamp(min=0).mean(dim=0)
-                    # print(f"GRAD SHAPE: {grad.size()}")
-
                     fev = fev.to(model.device)
-                    # cam = grad @ cam
                     fev = cam @ fev.unsqueeze(1)
                     fev = fev[:, 0]
 
@@ -647,12 +630,7 @@ class GeneratorOurs:
                     grad = blk[i].lang_self_att.self.get_attn_gradients().detach()[:, :, 1:-1, 1:-1]
                     cam = blk[i].lang_self_att.self.get_attn().detach()[:, :, 1:-1, 1:-1]
                     cam = avg_heads(cam, grad)
-                    # cam = cam.reshape(-1, cam.shape[-2], cam.shape[-1])
-                    # cam = cam.clamp(min=0).mean(dim=0)
 
-                    # grad = grad.reshape(-1, grad.shape[-2], grad.shape[-1])
-                    # grad = grad.clamp(min=0).mean(dim=0)
-                    # print(f"GRAD SHAPE: {grad.size()}")
                     fev = fev.to(model.device)
                     fev = cam @ fev.unsqueeze(1)
                     fev = fev[:, 0]
