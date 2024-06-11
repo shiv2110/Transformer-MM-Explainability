@@ -349,6 +349,12 @@ class GeneratorOurs:
         # return self.R_t_i.T, self.R_i_t.T #baka
 
 
+    def handle_fev (self, fev):
+        temp = torch.abs(fev)
+        idx = torch.argmax(temp)
+        if fev[idx] < 0:
+            return fev * -1
+        return fev
 
 
     def generate_ours_dsm(self, input, how_many = 5, index=None, use_lrp=True, normalize_self_attention=True, apply_self_in_rule_10=True, 
@@ -365,8 +371,8 @@ class GeneratorOurs:
         one_hot[0, index] = 1
         one_hot_vector = one_hot
         one_hot = torch.from_numpy(one_hot).requires_grad_(True)
-        one_hot = torch.sum(one_hot * output) #baka
-        # one_hot = torch.sum(one_hot.cuda() * output) #baka
+        # one_hot = torch.sum(one_hot * output) #baka
+        one_hot = torch.sum(one_hot.cuda() * output) #baka
 
         model.zero_grad()
         one_hot.backward(retain_graph=True)
@@ -422,6 +428,8 @@ class GeneratorOurs:
             # print(eigenvalues[fev_idx])
             # fev_idx = 1 #baka
             fev = eigenvectors[fev_idx]
+            # fev = eigenvectors[1]
+
             # k1, k2 = fev.topk(k = 1).indices[0], nfev.topk(k = 1).indices[0]
 
 
@@ -429,7 +437,10 @@ class GeneratorOurs:
                 fev = torch.cat( ( torch.zeros(1), fev, torch.zeros(1)  ) )
                 # fev = torch.cat( ( torch.zeros(1), fev ) )
 
-            return torch.abs(fev)
+            # return torch.abs(fev)
+            # print(fev)
+            return self.handle_fev(fev)
+
 
         
         image_fev = get_eigs(model.lxmert.encoder.visual_feats_list_x[-2], 
@@ -495,20 +506,18 @@ class GeneratorOurs:
         n_tuple = torch.kthvalue(eigenvalues.real, 2)
         fev_idx = n_tuple.indices
         fev = eigenvectors[fev_idx]
+        # fev = eigenvectors[1]
+
 
         if modality == 'text':
             fev = torch.cat( ( torch.zeros(1), fev, torch.zeros(1)  ) )
 
         return torch.abs(fev)
+        # return fev 
 
 
     
-    def generate_ours_dsm_grad(self, input, how_many = 5, index=None, use_lrp=True, normalize_self_attention=True, apply_self_in_rule_10=True, 
-                          method_name="dsm"):
-        self.use_lrp = use_lrp
-        self.normalize_self_attention = normalize_self_attention
-        self.apply_self_in_rule_10 = apply_self_in_rule_10
-
+    def generate_ours_dsm_grad_cam(self, input, how_many = 5, index=None):
         
         output = self.model_usage.forward(input).question_answering_score
         model = self.model_usage.model
@@ -516,40 +525,20 @@ class GeneratorOurs:
         one_hot[0, index] = 1
         one_hot_vector = one_hot
         one_hot = torch.from_numpy(one_hot).requires_grad_(True)
-        # one_hot = torch.sum(one_hot * output) #baka
-        one_hot = torch.sum(one_hot.cuda() * output) #baka
+        one_hot = torch.sum(one_hot * output) #baka
+        # one_hot = torch.sum(one_hot.cuda() * output) #baka
         model.zero_grad()
         one_hot.backward(retain_graph=True)
 
-        # blocks = model.lxmert.encoder.x_layers
-        # self.cross_attn_viz_feat_list = model.lxmert.encoder.visual_feats_list_x
-        # self.cross_attn_lg_feat_list = model.lxmert.encoder.lang_feats_list_x
 
-        # text_prior = input[1]
-        # text_prior = model.lxmert.encoder.lang_feats_list_x[-2].squeeze().cpu()[0] #CLS token feature vector
-        
-        # print(f"n-layers: {len(model.lxmert.encoder.visual_feats_list_x)}")
-        
-        # image_feats = model.lxmert.encoder.visual_feats_list_x[-2].detach().clone()
         image_flen1 = len(model.lxmert.encoder.visual_feats_list_x)
         text_flen1 = len(model.lxmert.encoder.lang_feats_list_x)
-        image_flen = len(model.lxmert.encoder.visual_feats_list_self)
-        text_flen = len(model.lxmert.encoder.lang_feats_list_self)
-        # text_feats = model.lxmert.encoder.lang_feats_list_x[-2].detach().clone()
 
-        # feats = F.normalize(feats, p = 2, dim = -1)
-        # image_feats = image_feats.squeeze().cpu()
-        # text_feats = text_feats.squeeze().cpu()[1:-1]
-        
-
-        # blk_count = 0
         def get_eigs (feats_list, flen, modality, how_many):
-            blk_count = 0
+            # blk_count = 0
             layer_wise_fevs = []
-            visual_blk = model.lxmert.encoder.r_layers
-            lang_blk = model.lxmert.encoder.layer
-
-
+            blk = model.lxmert.encoder.x_layers
+            # lang_blk = model.lxmert.encoder.layer
 
             for i in range(flen):
                 # feats = F.normalize(feats_list[i].detach().clone().squeeze().cpu(), p = 2, dim = -1)
@@ -561,104 +550,36 @@ class GeneratorOurs:
 
                 # layer_wise_fevs.append( eigenvalues[fev_idx].real * fev )
                 if modality == "image":
-                    grad = visual_blk[blk_count].attention.self.get_attn_gradients().detach()
-                    # print()
-                    cam = visual_blk[blk_count].attention.self.get_attn().detach()
-                    # cam = avg_heads(cam, grad)
-
-                    cam = cam.reshape(-1, cam.shape[-2], cam.shape[-1])
-                    cam = cam.clamp(min=0).mean(dim=0)
-
-                    grad = grad.reshape(-1, grad.shape[-2], grad.shape[-1])
-                    grad = grad.clamp(min=0).mean(dim=0)
-                    # print(f"GRAD SHAPE: {grad.size()}")
-
-                    fev = fev.to(model.device)
-                    cam = grad @ cam
-
-                    fev = cam @ fev.unsqueeze(1)
-                    fev = fev[:, 0]
-                    blk_count += 1
-                else:
-                    grad = lang_blk[blk_count].attention.self.get_attn_gradients().detach()
-                    grad = grad[:, :, 1:-1, 1:-1]
-                    cam = lang_blk[blk_count].attention.self.get_attn().detach()[:, :, 1:-1, 1:-1]
-                    # cam = avg_heads(cam, grad)
-                    cam = cam.reshape(-1, cam.shape[-2], cam.shape[-1])
-                    cam = cam.clamp(min=0).mean(dim=0)
-
-                    grad = grad.reshape(-1, grad.shape[-2], grad.shape[-1])
-                    grad = grad.clamp(min=0).mean(dim=0)
-                    # print(f"GRAD SHAPE: {grad.size()}")
-                    fev = fev.to(model.device)
-                    cam = grad @ cam
-                    fev = cam @ fev.unsqueeze(1)
-                    fev = fev[:, 0]
-                    blk_count += 1
-                    fev = torch.cat( ( torch.zeros(1).to(model.device), fev, torch.zeros(1).to(model.device)  ) )
-
-
-                layer_wise_fevs.append( torch.abs(fev) )
-      
-            return layer_wise_fevs
-    
-
-
-        def get_eigs1 (feats_list, flen, modality, how_many):
-            # blk_count = 0
-            layer_wise_fevs = []
-            blk = model.lxmert.encoder.x_layers
-
-
-            for i in range(flen):
-                # feats = F.normalize(feats_list[i].detach().clone().squeeze().cpu(), p = 2, dim = -1)
-                # print(f"Features' shape: {feats.shape}")
-                fev = self.get_fev(feats_list[i], modality, how_many)
-                if modality == "text":
-                    fev = fev[1:-1]
-
-                if modality == "image":
-                    cam_i_t = blk[i].visual_attention_copy.att.get_attn().detach()[:, :, :, 1:-1]
-                    grad_i_t = blk[i].visual_attention_copy.att.get_attn_gradients().detach()[:, :, :, 1:-1]
-                    cam_i_t = avg_heads_new(cam_i_t, grad_i_t)
-
                     grad = blk[i].visn_self_att.self.get_attn_gradients().detach()
+                    # print()
                     cam = blk[i].visn_self_att.self.get_attn().detach()
-                    cam = avg_heads_new(cam, grad)
+                    cam = avg_heads(cam, grad)
 
-                    cam = cam_i_t + cam
-   
-                    fev = fev.to(model.device)
-
-                    fev = cam @ fev.unsqueeze(1)
-                    fev = fev[:, 0]
-
-                else:
-
-                    cam_t_i = blk[i].visual_attention.att.get_attn().detach()[:, :, 1:-1, :]
-                    # print(f"CAM T I : {cam_t_i.size()}")
-
-                    grad_t_i = blk[i].visual_attention.att.get_attn_gradients().detach()[:, :, 1:-1, :]
-                    cam_t_i = avg_heads_new(cam_t_i, grad_t_i)
-                    # print(f"CAM T I : {cam_t_i.size()}")
-
-
-                    grad = blk[i].lang_self_att.self.get_attn_gradients().detach()[:, :, 1:-1, 1:-1]
-                    cam = blk[i].lang_self_att.self.get_attn().detach()[:, :, 1:-1, 1:-1]
-                    cam = avg_heads_new(cam, grad)
                     # cam = cam.reshape(-1, cam.shape[-2], cam.shape[-1])
                     # cam = cam.clamp(min=0).mean(dim=0)
 
                     # grad = grad.reshape(-1, grad.shape[-2], grad.shape[-1])
                     # grad = grad.clamp(min=0).mean(dim=0)
                     # print(f"GRAD SHAPE: {grad.size()}")
-                    cam = cam_t_i + cam
-                    # print(f"CAM SIZE BAKA : {cam.size()}")
+
                     fev = fev.to(model.device)
-        
+                    # cam = grad @ cam
                     fev = cam @ fev.unsqueeze(1)
                     fev = fev[:, 0]
 
+                else:
+                    grad = blk[i].lang_self_att.self.get_attn_gradients().detach()[:, :, 1:-1, 1:-1]
+                    cam = blk[i].lang_self_att.self.get_attn().detach()[:, :, 1:-1, 1:-1]
+                    cam = avg_heads(cam, grad)
+                    # cam = cam.reshape(-1, cam.shape[-2], cam.shape[-1])
+                    # cam = cam.clamp(min=0).mean(dim=0)
+
+                    # grad = grad.reshape(-1, grad.shape[-2], grad.shape[-1])
+                    # grad = grad.clamp(min=0).mean(dim=0)
+                    # print(f"GRAD SHAPE: {grad.size()}")
+                    fev = fev.to(model.device)
+                    fev = cam @ fev.unsqueeze(1)
+                    fev = fev[:, 0]
                     fev = torch.cat( ( torch.zeros(1).to(model.device), fev, torch.zeros(1).to(model.device)  ) )
 
 
@@ -666,28 +587,21 @@ class GeneratorOurs:
       
             return layer_wise_fevs
 
-        
-        image_fevs = get_eigs(model.lxmert.encoder.visual_feats_list_self, 
-                                                 image_flen, "image", how_many)
-        
-        lang_fevs = get_eigs(model.lxmert.encoder.lang_feats_list_self, 
-                                               text_flen, "text", how_many)
 
-
-        image_fevs1 = get_eigs1(model.lxmert.encoder.visual_feats_list_x, 
+        image_fevs = get_eigs(model.lxmert.encoder.visual_feats_list_x, 
                                                  image_flen1 - 1, "image", how_many)
         
-        lang_fevs1 = get_eigs1(model.lxmert.encoder.lang_feats_list_x, 
+        lang_fevs = get_eigs(model.lxmert.encoder.lang_feats_list_x, 
                                                text_flen1, "text", how_many)
 
 
         # return lang_fevs[-2], image_fevs[-2], eigenvalues_image, eigenvalues_text
-        new_fev = torch.stack(image_fevs + image_fevs1, dim=0).sum(dim=0)
-        new_fev1 = torch.stack(lang_fevs + lang_fevs1, dim=0).sum(dim=0)
+        new_fev_image = torch.stack(image_fevs, dim=0).sum(dim=0)
+        new_fev_lang = torch.stack(lang_fevs, dim=0).sum(dim=0)
         # new_fev1 = (new_fev1 - torch.min(new_fev1))/(torch.max(new_fev1) - torch.min(new_fev1))
         # new_fev = (new_fev - torch.min(new_fev))/(torch.max(new_fev) - torch.min(new_fev))
 
-        return new_fev1, new_fev
+        return new_fev_lang, new_fev_image
 
 
 

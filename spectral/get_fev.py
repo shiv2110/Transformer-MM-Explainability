@@ -25,13 +25,18 @@ def get_eigs (feats, modality, how_many = None):
         val = int( math.sqrt(n_image_feats) )
         if val * val == n_image_feats:
             feats = F.normalize(feats, p = 2, dim = -1)
+            # feats = feats
         elif val * val + 1 == n_image_feats:
             feats = F.normalize(feats, p = 2, dim = -1)[1:]
+            # feats = F[1:]
+
         else:
             print(f"Invalid number of features detected: {n_image_feats}")
 
     else:
         feats = F.normalize(feats, p = 2, dim = -1)[1:-1]
+        # feats = feats[1:-1]
+
 
     W_feat = (feats @ feats.T)
     W_feat = (W_feat * (W_feat > 0))
