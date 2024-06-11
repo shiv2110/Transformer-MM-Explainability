@@ -371,8 +371,8 @@ class GeneratorOurs:
         one_hot[0, index] = 1
         one_hot_vector = one_hot
         one_hot = torch.from_numpy(one_hot).requires_grad_(True)
-        # one_hot = torch.sum(one_hot * output) #baka
-        one_hot = torch.sum(one_hot.cuda() * output) #baka
+        one_hot = torch.sum(one_hot * output) #baka
+        # one_hot = torch.sum(one_hot.cuda() * output) #baka
 
         model.zero_grad()
         one_hot.backward(retain_graph=True)
@@ -431,8 +431,9 @@ class GeneratorOurs:
             # return fev
             fev = self.handle_fev(fev)
             if modality == 'text':
+                fev = torch.abs(fev)
                 fev = torch.cat( ( torch.zeros(1), fev, torch.zeros(1)  ) )
-                fev[0], fev[-1] = -1, -1
+                # fev[0], fev[] = -1, -1
             return fev
 
 
@@ -502,13 +503,14 @@ class GeneratorOurs:
         fev = eigenvectors[fev_idx]
         # fev = eigenvectors[1]
 
-
-        if modality == 'text':
-            fev = torch.cat( ( torch.zeros(1), fev, torch.zeros(1)  ) )
-
         # return torch.abs(fev)
         # return fev 
-        return self.handle_fev(fev)
+        fev = self.handle_fev(fev)
+        if modality == 'text':
+            fev = torch.abs(fev)
+            fev = torch.cat( ( torch.zeros(1), fev, torch.zeros(1) ) )
+            # fev[0], fev[-1] = -1, -1
+        return fev
 
 
 
@@ -521,8 +523,8 @@ class GeneratorOurs:
         one_hot[0, index] = 1
         one_hot_vector = one_hot
         one_hot = torch.from_numpy(one_hot).requires_grad_(True)
-        one_hot = torch.sum(one_hot * output) #baka
-        # one_hot = torch.sum(one_hot.cuda() * output) #baka
+        # one_hot = torch.sum(one_hot * output) #baka
+        one_hot = torch.sum(one_hot.cuda() * output) #baka
         model.zero_grad()
         one_hot.backward(retain_graph=True)
 
@@ -560,12 +562,14 @@ class GeneratorOurs:
                     fev = fev.to(model.device)
                     fev = grad @ fev.unsqueeze(1)
                     fev = fev[:, 0]
-                    fev = torch.cat( ( torch.zeros(1).to(model.device), fev, torch.zeros(1).to(model.device)  ) )
-                    fev[0], fev[-1] = -1, -1
+                    fev = torch.cat( ( torch.zeros(1).to(model.device), fev, torch.zeros(1).to(model.device) ) )
+                    # fev[0], fev[-1] = -1, -1
 
 
                 # layer_wise_fevs.append( torch.abs(fev) )
-                layer_wise_fevs.append( fev )
+                layer_wise_fevs.append( self.handle_fev(fev) )
+
+                # layer_wise_fevs.append( self.handle_fev(fev) if modality == "image" else torch.abs(fev) )
 
       
             return layer_wise_fevs
@@ -584,9 +588,6 @@ class GeneratorOurs:
         # new_fev = (new_fev - torch.min(new_fev))/(torch.max(new_fev) - torch.min(new_fev))
 
         return new_fev_lang, new_fev_image
-
-
-
 
 
 

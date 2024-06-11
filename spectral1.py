@@ -314,10 +314,10 @@ def spectral_stuff():
     ]
 
 
-    URL = '../../data/root/val2014/{}.jpg'.format(image_ids[-18])
+    URL = '../../data/root/val2014/{}.jpg'.format(image_ids[5])
     # URL = image_ids[-1]
     # URL = 'giraffe.jpg'
-    qs = test_questions_for_images[-18]
+    qs = test_questions_for_images[5]
     R_t_t, R_t_i = lrp.generate_ours_dsm_grad((URL, qs), how_many = 5)
     
     # R_t_t, R_t_i = baselines.generate_transformer_attr((URL, qs))

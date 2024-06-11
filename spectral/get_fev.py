@@ -75,8 +75,8 @@ def get_eigs (feats, modality, how_many = None):
     if modality == 'text':
         fev = torch.cat( ( torch.zeros(1), fev, torch.zeros(1)  ) )
 
-    # return torch.abs(fev)
-    return handle_fev(fev)
+    return torch.abs(fev)
+    # return handle_fev(fev)
 
 
 
