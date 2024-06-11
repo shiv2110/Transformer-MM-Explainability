@@ -423,23 +423,17 @@ class GeneratorOurs:
             eigenvalues, eigenvectors = torch.from_numpy(eigenvalues), torch.from_numpy(eigenvectors.T).float()
             
             n_tuple = torch.kthvalue(eigenvalues.real, 2)
-                # print(f"N_Tuple: {n_tuple.indices}")
             fev_idx = n_tuple.indices
-            # print(eigenvalues[fev_idx])
-            # fev_idx = 1 #baka
             fev = eigenvectors[fev_idx]
-            # fev = eigenvectors[1]
 
-            # k1, k2 = fev.topk(k = 1).indices[0], nfev.topk(k = 1).indices[0]
-
-
-            if modality == 'text':
-                fev = torch.cat( ( torch.zeros(1), fev, torch.zeros(1)  ) )
-                # fev = torch.cat( ( torch.zeros(1), fev ) )
 
             # return torch.abs(fev)
+            # return fev
+            fev = self.handle_fev(fev)
+            if modality == 'text':
+                fev = torch.cat( ( torch.zeros(1), fev, torch.zeros(1)  ) )
+                fev[0], fev[-1] = -1, -1
             return fev
-            # return self.handle_fev(fev)
 
 
         
@@ -512,8 +506,89 @@ class GeneratorOurs:
         if modality == 'text':
             fev = torch.cat( ( torch.zeros(1), fev, torch.zeros(1)  ) )
 
-        return torch.abs(fev)
+        # return torch.abs(fev)
         # return fev 
+        return self.handle_fev(fev)
+
+
+
+
+    def generate_ours_dsm_grad(self, input, how_many = 5, index=None):
+        
+        output = self.model_usage.forward(input).question_answering_score
+        model = self.model_usage.model
+        one_hot = np.zeros((1, output.size()[-1]), dtype=np.float32)
+        one_hot[0, index] = 1
+        one_hot_vector = one_hot
+        one_hot = torch.from_numpy(one_hot).requires_grad_(True)
+        one_hot = torch.sum(one_hot * output) #baka
+        # one_hot = torch.sum(one_hot.cuda() * output) #baka
+        model.zero_grad()
+        one_hot.backward(retain_graph=True)
+
+
+        image_flen1 = len(model.lxmert.encoder.visual_feats_list_x)
+        text_flen1 = len(model.lxmert.encoder.lang_feats_list_x)
+
+        def get_eigs (feats_list, flen, modality, how_many):
+            # blk_count = 0
+            layer_wise_fevs = []
+            blk = model.lxmert.encoder.x_layers
+            # lang_blk = model.lxmert.encoder.layer
+
+            for i in range(flen):
+                # feats = F.normalize(feats_list[i].detach().clone().squeeze().cpu(), p = 2, dim = -1)
+                # print(f"Features' shape: {feats.shape}")
+                fev = self.get_fev(feats_list[i], modality, how_many)
+                if modality == "text":
+                    fev = fev[1:-1]
+                    # fev = torch.cat( ( torch.zeros(1), fev ) )
+
+                # layer_wise_fevs.append( eigenvalues[fev_idx].real * fev )
+                if modality == "image":
+                    grad = blk[i].visn_self_att.self.get_attn_gradients().detach()
+                    grad = grad.reshape(-1, grad.shape[-2], grad.shape[-1])
+                    grad = grad.clamp(min=0).mean(dim=0)
+                    fev = fev.to(model.device)
+                    fev = grad @ fev.unsqueeze(1)
+                    fev = fev[:, 0]
+
+                else:
+                    grad = blk[i].lang_self_att.self.get_attn_gradients().detach()[:, :, 1:-1, 1:-1]
+                    grad = grad.reshape(-1, grad.shape[-2], grad.shape[-1])
+                    grad = grad.clamp(min=0).mean(dim=0)
+                    fev = fev.to(model.device)
+                    fev = grad @ fev.unsqueeze(1)
+                    fev = fev[:, 0]
+                    fev = torch.cat( ( torch.zeros(1).to(model.device), fev, torch.zeros(1).to(model.device)  ) )
+                    fev[0], fev[-1] = -1, -1
+
+
+                # layer_wise_fevs.append( torch.abs(fev) )
+                layer_wise_fevs.append( fev )
+
+      
+            return layer_wise_fevs
+
+        image_fevs = get_eigs(model.lxmert.encoder.visual_feats_list_x, 
+                                                 image_flen1 - 1, "image", how_many)
+        
+        lang_fevs = get_eigs(model.lxmert.encoder.lang_feats_list_x, 
+                                               text_flen1, "text", how_many)
+
+
+        # return lang_fevs[-2], image_fevs[-2], eigenvalues_image, eigenvalues_text
+        new_fev_image = torch.stack(image_fevs, dim=0).sum(dim=0)
+        new_fev_lang = torch.stack(lang_fevs, dim=0).sum(dim=0)
+        # new_fev1 = (new_fev1 - torch.min(new_fev1))/(torch.max(new_fev1) - torch.min(new_fev1))
+        # new_fev = (new_fev - torch.min(new_fev))/(torch.max(new_fev) - torch.min(new_fev))
+
+        return new_fev_lang, new_fev_image
+
+
+
+
+
 
 
     

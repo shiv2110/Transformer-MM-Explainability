@@ -14,6 +14,12 @@ def get_diagonal (W):
     D = diags(D)
     return D
 
+def handle_fev (fev):
+    temp = torch.abs(fev)
+    idx = torch.argmax(temp)
+    if fev[idx] < 0:
+        return fev * -1
+    return fev
 
 def get_eigs (feats, modality, how_many = None):
     if feats.size(0) == 1:
@@ -69,7 +75,8 @@ def get_eigs (feats, modality, how_many = None):
     if modality == 'text':
         fev = torch.cat( ( torch.zeros(1), fev, torch.zeros(1)  ) )
 
-    return torch.abs(fev)
+    # return torch.abs(fev)
+    return handle_fev(fev)
 
 
 
