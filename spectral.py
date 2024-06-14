@@ -551,7 +551,11 @@ def spectral_stuff():
 
         "D:/Thesis_2023-24/codes/METER/images/train.jpg",
 
-        "D:/Thesis_2023-24/baby_train.jpg"
+        "D:/Thesis_2023-24/baby_train.jpg",
+
+        'COCO_val2014_000000025467'
+
+        # 'COCO_val2014_000000552945'
 
     ]
 
@@ -620,19 +624,26 @@ def spectral_stuff():
 
         "What is on the left of the road?",
 
-        "What vehicle is the kid playing with?"
+        "What vehicle is the kid playing with?",
+
+        # "What sport is the woman participating in?"
+        # "What color is this person's coat?"
+        "Is the man sitting?"
+
+        # "Is t?"
+
     ]
 
 
-    URL = '../../data/root/val2014/{}.jpg'.format(image_ids[2])
+    URL = '../../data/root/val2014/{}.jpg'.format(image_ids[-1])
     # URL = image_ids[-1]
     # URL = 'giraffe.jpg'
-    qs = test_questions_for_images[2]
-    # R_t_t, R_t_i = lrp.generate_ours_dsm_grad((URL, qs), how_many = 5)
+    qs = test_questions_for_images[-1]
+    # R_t_t, R_t_i = lrp.generate_ours_dsm((URL, qs), how_many = 5)
     
     # R_t_t, R_t_i = baselines.generate_transformer_attr((URL, qs))
 
-    R_t_t, R_t_i = lrp.generate_ours_dsm_grad_cam((URL, qs), how_many = 5)
+    R_t_t, R_t_i = lrp.generate_ours_dsm_grad((URL, qs), how_many = 5)
     text_scores = R_t_t
     image_scores = R_t_i
 

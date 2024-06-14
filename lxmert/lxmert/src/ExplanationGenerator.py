@@ -452,6 +452,13 @@ class GeneratorOurs:
         D = diags(D)
         return D
 
+    def handle_sign (self, fev):
+        temp = torch.abs(fev)
+        idx = torch.argmax(temp)
+        if fev[idx] < 0:
+            fev = fev * (-1)
+        return (fev - fev.min())/(fev.max() - fev.min())
+
 
     def get_fev (self, feats, modality, how_many = None):
         if feats.size(0) == 1:
@@ -502,7 +509,8 @@ class GeneratorOurs:
         if modality == 'text':
             fev = torch.cat( ( torch.zeros(1), fev, torch.zeros(1) ) )
  
-        return torch.abs(fev)
+        # return torch.abs(fev)
+        return self.handle_sign(fev)
 
 
 
@@ -515,8 +523,8 @@ class GeneratorOurs:
         one_hot[0, index] = 1
         one_hot_vector = one_hot
         one_hot = torch.from_numpy(one_hot).requires_grad_(True)
-        one_hot = torch.sum(one_hot * output) #baka
-        # one_hot = torch.sum(one_hot.cuda() * output) #baka
+        # one_hot = torch.sum(one_hot * output) #baka
+        one_hot = torch.sum(one_hot.cuda() * output) #baka
         model.zero_grad()
         one_hot.backward(retain_graph=True)
 
@@ -557,8 +565,9 @@ class GeneratorOurs:
                     fev = torch.cat( ( torch.zeros(1).to(model.device), fev, torch.zeros(1).to(model.device) ) )
                     # fev[0], fev[-1] = -1, -1
 
+                layer_wise_fevs.append( fev )
 
-                layer_wise_fevs.append( torch.abs(fev) )
+                # layer_wise_fevs.append( torch.abs(fev) )
                 # layer_wise_fevs.append( self.handle_fev(fev) )
 
                 # layer_wise_fevs.append( self.handle_fev(fev) if modality == "image" else torch.abs(fev) )
@@ -658,6 +667,7 @@ class GeneratorOurs:
         return new_fev_lang, new_fev_image
 
 
+    
 
 
     def generate_eigen_cam(self, input, how_many = 5, index=None, use_lrp=True, normalize_self_attention=True, apply_self_in_rule_10=True, 
